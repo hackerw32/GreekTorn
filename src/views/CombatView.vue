@@ -1,79 +1,120 @@
 <template>
   <div class="combat-page">
-    <h2 class="page-title">⚔️ Μάχη</h2>
 
-    <!-- Combat stats -->
-    <div class="card flex flex-between" style="font-size: var(--font-size-sm)">
-      <span>Νίκες: <strong class="text-success">{{ combatStore.combatStats.wins }}</strong></span>
-      <span>Ήττες: <strong class="text-danger">{{ combatStore.combatStats.losses }}</strong></span>
-      <span>Win Rate: <strong class="text-accent">{{ combatStore.combatStats.winRate }}%</strong></span>
-    </div>
+    <!-- ===== MODE SELECT ===== -->
+    <template v-if="screen === 'mode'">
+      <h2 class="page-title">⚔️ Μάχη</h2>
 
-    <!-- Fight result -->
-    <Transition name="slide-up">
-      <div v-if="combatStore.lastFight" class="card result-card" :class="combatStore.lastFight.won ? 'result-success' : 'result-fail'">
-        <div class="result-header">
-          <span class="result-icon">{{ combatStore.lastFight.won ? '🏆' : '💀' }}</span>
-          <div>
-            <strong>{{ combatStore.lastFight.won ? 'Νίκη!' : 'Ήττα...' }} vs {{ combatStore.lastFight.npcName }}</strong>
-            <span class="text-muted" style="font-size: var(--font-size-xs)"> ({{ combatStore.lastFight.turns }} γύροι)</span>
-          </div>
+      <!-- Stats bar -->
+      <div class="card stats-row">
+        <div class="stat-pair">
+          <span class="text-muted">Νίκες</span>
+          <span class="text-mono text-success">{{ combatStore.combatStats.wins }}</span>
         </div>
-        <div v-if="combatStore.lastFight.won" class="result-details">
-          <span class="badge badge-success">+€{{ combatStore.lastFight.cashReward }}</span>
-          <span class="badge badge-info">+{{ combatStore.lastFight.xpReward }} XP</span>
-          <span v-if="combatStore.lastFight.itemDrop" class="badge badge-warning">{{ combatStore.lastFight.itemDrop }}!</span>
+        <div class="stat-pair">
+          <span class="text-muted">Ήττες</span>
+          <span class="text-mono text-danger">{{ combatStore.combatStats.losses }}</span>
         </div>
-
-        <!-- Combat log toggle -->
-        <button class="btn btn-sm btn-outline mt-sm" @click="showLog = !showLog">
-          {{ showLog ? 'Κρύψε' : 'Δες' }} Αναφορά Μάχης
-        </button>
-        <div v-if="showLog" class="combat-log mt-sm">
-          <div v-for="(entry, i) in combatStore.lastFight.log" :key="i" class="log-entry">
-            <span class="text-muted">{{ entry.turn }}.</span>
-            <span :class="entry.actor === 'player' ? 'text-accent' : 'text-danger'">
-              {{ entry.actor === 'player' ? 'Εσύ' : combatStore.lastFight.npcName }}
-            </span>
-            <span v-if="entry.action === 'hit'"> χτύπησε για <strong>{{ entry.damage }}</strong> ζημιά</span>
-            <span v-else class="text-muted"> αστόχησε</span>
-          </div>
+        <div class="stat-pair">
+          <span class="text-muted">Win Rate</span>
+          <span class="text-mono text-accent">{{ combatStore.combatStats.winRate }}%</span>
         </div>
-
-        <button class="btn btn-sm btn-outline mt-sm" @click="combatStore.clearFight()">✕ Κλείσε</button>
       </div>
-    </Transition>
 
-    <!-- NPC List by difficulty -->
-    <div v-for="diff in difficulties" :key="diff.key" class="difficulty-section">
-      <h3 class="difficulty-title">
-        <span :class="'badge ' + diff.color">{{ diff.label }}</span>
-      </h3>
-      <div class="npc-list">
-        <div
-          v-for="npc in getNpcsByDiff(diff.key)"
-          :key="npc.id"
-          class="card npc-card"
-          :class="{ disabled: !canFight(npc) }"
-          @click="fight(npc)"
-        >
-          <div class="npc-header">
-            <span class="npc-icon">{{ npc.icon }}</span>
-            <div class="npc-info">
-              <strong>{{ npc.name }}</strong>
-              <p class="text-muted" style="font-size: var(--font-size-xs)">{{ npc.description }}</p>
+      <div class="mode-grid">
+        <div class="card mode-card" @click="selectMode('solo')">
+          <span class="mode-icon">🤺</span>
+          <span class="mode-title">Solo</span>
+          <span class="mode-desc">Πολέμα NPCs με αυξανόμενη δυσκολία</span>
+        </div>
+        <div class="card mode-card" @click="selectMode('pvp')">
+          <span class="mode-icon">🆚</span>
+          <span class="mode-title">PVP</span>
+          <span class="mode-desc">Επίθεση σε άλλους παίκτες</span>
+        </div>
+      </div>
+    </template>
+
+    <!-- ===== OPPONENT SELECT ===== -->
+    <template v-else-if="screen === 'select'">
+      <div class="select-header">
+        <button class="btn btn-sm btn-outline" @click="screen = 'mode'">← Πίσω</button>
+        <h2 class="page-title" style="margin:0">{{ mode === 'solo' ? '🤺 Solo' : '🆚 PVP' }}</h2>
+      </div>
+
+      <!-- SOLO opponent list -->
+      <template v-if="mode === 'solo'">
+        <div v-for="diff in difficulties" :key="diff.key" class="tier-section">
+          <h3 class="tier-title"><span :class="'badge ' + diff.color">{{ diff.label }}</span></h3>
+          <div class="opp-list">
+            <div
+              v-for="npc in getNpcsByDiff(diff.key)"
+              :key="npc.id"
+              class="card opp-card"
+              :class="{ disabled: !canFight(npc) }"
+              @click="startFight(npc)"
+            >
+              <div class="opp-top">
+                <span class="opp-icon">{{ npc.icon }}</span>
+                <div class="opp-info">
+                  <strong>{{ npc.name }}</strong>
+                  <p class="text-muted opp-desc">{{ npc.description }}</p>
+                </div>
+              </div>
+              <div class="opp-meta">
+                <span class="badge badge-info">Επ. {{ npc.level }}</span>
+                <span class="text-muted text-mono opp-cash">€{{ npc.rewards.cashMin }}-{{ npc.rewards.cashMax }}</span>
+                <span class="badge badge-success opp-energy">{{ npc.energyCost }} ⚡</span>
+              </div>
             </div>
           </div>
-          <div class="npc-stats">
-            <span class="badge badge-info">Επ. {{ npc.level }}</span>
-            <span class="text-muted text-mono" style="font-size: var(--font-size-xs)">
-              €{{ npc.rewards.cashMin }}-{{ npc.rewards.cashMax }}
-            </span>
-            <span class="badge badge-success" style="font-size: 10px">{{ npc.energyCost }} ⚡</span>
+        </div>
+      </template>
+
+      <!-- PVP opponent list -->
+      <template v-else>
+        <div class="card pvp-notice text-muted">
+          ⚠️ Επίθεση σε παίκτες — κλέβεις χρήματά τους αν κερδίσεις
+        </div>
+        <div v-for="tier in pvpTiers" :key="tier.key" class="tier-section">
+          <h3 class="tier-title"><span :class="'badge ' + tier.color">{{ tier.label }}</span></h3>
+          <div class="opp-list">
+            <div
+              v-for="user in getUsersByTier(tier.key)"
+              :key="user.id"
+              class="card opp-card pvp-card"
+              :class="{ disabled: !canFight(user) }"
+              @click="startFight(user)"
+            >
+              <div class="opp-top">
+                <span class="opp-icon">{{ user.icon }}</span>
+                <div class="opp-info">
+                  <strong class="pvp-nick">{{ user.nickname }}</strong>
+                  <div class="pvp-sub">
+                    <span class="text-muted" style="font-size:var(--font-size-xs)">📍 {{ user.location }}</span>
+                    <span class="text-muted" style="font-size:var(--font-size-xs)">🕐 {{ user.lastSeen }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="opp-meta">
+                <span class="badge badge-info">Επ. {{ user.level }}</span>
+                <span class="text-muted text-mono opp-cash">€{{ user.rewards.cashMin }}-{{ user.rewards.cashMax }}</span>
+                <span class="badge badge-success opp-energy">{{ user.energyCost }} ⚡</span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+      </template>
+    </template>
+
+    <!-- ===== COMBAT ARENA ===== -->
+    <CombatArena
+      v-else-if="screen === 'fight'"
+      :opponent="selectedOpponent"
+      :is-pvp="mode === 'pvp'"
+      @fight-end="onFightEnd"
+    />
+
   </div>
 </template>
 
@@ -82,35 +123,102 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePlayerStore } from '../stores/playerStore'
 import { useCombatStore } from '../stores/combatStore'
+import { useInventoryStore } from '../stores/inventoryStore'
+import { useGameStore } from '../stores/gameStore'
 import { npcs, difficultyLabels } from '../data/npcs'
+import { fakeUsers, pvpTierLabels } from '../data/fakeUsers'
+import { calculateHospitalTime } from '../engine/formulas'
+import CombatArena from '../components/combat/CombatArena.vue'
 
 const player = usePlayerStore()
 const combatStore = useCombatStore()
+const inventory = useInventoryStore()
+const gameStore = useGameStore()
 const router = useRouter()
-const showLog = ref(false)
+
+const screen = ref('mode')  // mode | select | fight
+const mode = ref('solo')    // solo | pvp
+const selectedOpponent = ref(null)
 
 const difficulties = [
-  { key: 'easy', ...difficultyLabels.easy },
-  { key: 'medium', ...difficultyLabels.medium },
-  { key: 'hard', ...difficultyLabels.hard },
+  { key: 'easy',      ...difficultyLabels.easy },
+  { key: 'medium',    ...difficultyLabels.medium },
+  { key: 'hard',      ...difficultyLabels.hard },
   { key: 'very_hard', ...difficultyLabels.very_hard },
-  { key: 'boss', ...difficultyLabels.boss },
+  { key: 'boss',      ...difficultyLabels.boss },
 ]
 
-function getNpcsByDiff(difficulty) {
-  return npcs.filter(n => n.difficulty === difficulty)
+const pvpTiers = [
+  { key: 'beginner', ...pvpTierLabels.beginner },
+  { key: 'medium',   ...pvpTierLabels.medium },
+  { key: 'advanced', ...pvpTierLabels.advanced },
+  { key: 'elite',    ...pvpTierLabels.elite },
+]
+
+function getNpcsByDiff(d) { return npcs.filter(n => n.difficulty === d) }
+function getUsersByTier(t) { return fakeUsers.filter(u => u.tier === t) }
+
+function canFight(target) {
+  return player.resources.energy.current >= target.energyCost && !player.isIncapacitated
 }
 
-function canFight(npc) {
-  return player.resources.energy.current >= npc.energyCost && !player.isIncapacitated
+function selectMode(m) {
+  mode.value = m
+  screen.value = 'select'
 }
 
-function fight(npc) {
-  if (!canFight(npc)) return
-  showLog.value = false
-  const result = combatStore.startCombat(npc.id)
-  if (result && !result.won) {
-    setTimeout(() => router.push('/hospital'), 1500)
+function startFight(opponent) {
+  if (!canFight(opponent)) return
+  // Spend energy now (before fight starts)
+  player.modifyResource('energy', -opponent.energyCost)
+  selectedOpponent.value = opponent
+  screen.value = 'fight'
+}
+
+function onFightEnd(result) {
+  if (result.won) {
+    player.addCash(result.cashReward)
+    player.addXP(result.xpReward)
+    player.resources.hp.current = result.playerHPRemaining
+    player.addMeson(1)
+
+    if (result.itemDropId) {
+      inventory.addItem(result.itemDropId, 1)
+    }
+
+    player.logActivity(
+      `⚔️ ${result.isPvp ? 'PVP' : ''} Νίκη vs ${result.opponentName}: +€${result.cashReward}`,
+      'combat'
+    )
+    gameStore.addNotification(
+      `${result.isPvp ? 'PVP ' : ''}Νίκη! +€${result.cashReward} +${result.xpReward}XP`,
+      'success'
+    )
+  } else {
+    player.resources.hp.current = 0
+    const hospitalTime = calculateHospitalTime(0, player.resources.hp.max, selectedOpponent.value.level)
+    player.setStatus('hospital', hospitalTime)
+
+    player.logActivity(
+      `⚔️ ${result.isPvp ? 'PVP' : ''} Ήττα vs ${result.opponentName} — Νοσοκομείο`,
+      'danger'
+    )
+    gameStore.addNotification('Ήττα! Νοσοκομείο...', 'hospital')
+  }
+
+  // Record history
+  combatStore.recordHistory({
+    opponentId: result.opponentId,
+    isPvp: result.isPvp,
+    won: result.won,
+  })
+
+  gameStore.saveGame()
+
+  if (result.won) {
+    screen.value = 'select'
+  } else {
+    setTimeout(() => router.push('/hospital'), 800)
   }
 }
 </script>
@@ -124,61 +232,78 @@ function fight(npc) {
 
 .page-title { font-size: var(--font-size-2xl); }
 
-.result-card { border-left: 3px solid; }
-.result-success { border-left-color: var(--color-success); }
-.result-fail { border-left-color: var(--color-danger); }
-.result-header { display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-xs); }
-.result-icon { font-size: 28px; }
-.result-details { display: flex; gap: var(--space-sm); flex-wrap: wrap; }
-
-.combat-log {
-  max-height: 200px;
-  overflow-y: auto;
-  font-size: var(--font-size-xs);
-  line-height: 1.6;
-  background: var(--bg-base);
-  padding: var(--space-sm);
-  border-radius: var(--border-radius-md);
+.stats-row { display: flex; justify-content: space-around; }
+.stat-pair {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 2px;
+  font-size: var(--font-size-sm);
 }
 
-.log-entry { display: flex; gap: var(--space-xs); }
+/* Mode select */
+.mode-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+}
 
-.difficulty-section { margin-bottom: var(--space-sm); }
-.difficulty-title { margin-bottom: var(--space-sm); }
-
-.npc-list {
+.mode-card {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: var(--space-sm);
+  padding: var(--space-lg) var(--space-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: center;
+}
+.mode-card:hover {
+  background: var(--bg-surface-raised);
+  transform: translateY(-2px);
+  border-color: var(--color-accent);
+}
+.mode-icon { font-size: 3rem; }
+.mode-title { font-size: var(--font-size-lg); font-weight: var(--font-weight-bold); }
+.mode-desc { font-size: var(--font-size-xs); color: var(--text-secondary); }
+
+/* Opponent select */
+.select-header {
+  display: flex; align-items: center; gap: var(--space-sm);
 }
 
-.npc-card {
+.tier-section { margin-bottom: var(--space-sm); }
+.tier-title { margin-bottom: var(--space-sm); }
+
+.opp-list { display: flex; flex-direction: column; gap: var(--space-sm); }
+
+.opp-card {
   cursor: pointer;
   transition: all var(--transition-fast);
 }
-
-.npc-card:hover:not(.disabled) {
+.opp-card:hover:not(.disabled) {
   background: var(--bg-surface-raised);
   transform: translateX(2px);
 }
+.opp-card.disabled { opacity: 0.5; cursor: not-allowed; }
 
-.npc-card.disabled { opacity: 0.5; cursor: not-allowed; }
-
-.npc-header {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-sm);
-  margin-bottom: var(--space-xs);
+.opp-top {
+  display: flex; align-items: flex-start;
+  gap: var(--space-sm); margin-bottom: var(--space-xs);
 }
+.opp-icon { font-size: 28px; flex-shrink: 0; }
+.opp-info { flex: 1; min-width: 0; }
+.opp-info strong { font-size: var(--font-size-sm); }
+.opp-desc { font-size: var(--font-size-xs); margin: 0; }
 
-.npc-icon { font-size: 28px; flex-shrink: 0; }
-.npc-info { flex: 1; min-width: 0; }
-.npc-info strong { font-size: var(--font-size-sm); }
-
-.npc-stats {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  flex-wrap: wrap;
+.opp-meta {
+  display: flex; align-items: center;
+  gap: var(--space-sm); flex-wrap: wrap;
 }
+.opp-cash { font-size: var(--font-size-xs); }
+.opp-energy { font-size: 10px; }
+
+/* PVP */
+.pvp-notice { padding: var(--space-sm); font-size: var(--font-size-xs); text-align: center; }
+.pvp-card { border-left: 2px solid var(--color-accent); }
+.pvp-nick { font-family: var(--font-family-mono); color: var(--color-accent); }
+.pvp-sub { display: flex; gap: var(--space-sm); margin-top: 2px; flex-wrap: wrap; }
 </style>
