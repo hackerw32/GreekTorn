@@ -160,8 +160,8 @@ function startExercise(ex) {
   )
   const gain = baseGain * ex.multiplier * travelStore.gymBoostMultiplier
 
-  // For dice: roll is 1-100, always "succeeds" for gym (shows effort)
-  const roll = Math.floor(Math.random() * 100) + 1
+  // Gym always succeeds — show a high d10 roll for fun
+  const roll = 7 + Math.floor(Math.random() * 4) // 7-10
 
   const statLabel = statDefs.find(s => s.key === selectedStat.value)?.label || selectedStat.value
 
@@ -174,7 +174,7 @@ function startExercise(ex) {
     preRolled: {
       success: true,
       roll,
-      targetRoll: 100, // gym always succeeds
+      targetRoll: 1, // gym always succeeds (need ≥1)
       rewards: {
         statGain: gain,
         statName: statLabel,

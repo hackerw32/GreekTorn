@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { crimes, getCrimeById } from '../data/crimes'
-import { calculateCrimeSuccess, calculateCrimeReward, calculateJailTime, rollItemDrop } from '../engine/formulas'
+import { calculateCrimeSuccess, calculateCrimeReward, calculateJailTime, rollItemDrop, rollD10 } from '../engine/formulas'
 import { usePlayerStore } from './playerStore'
 import { useGameStore } from './gameStore'
 import { useInventoryStore } from './inventoryStore'
@@ -63,9 +63,7 @@ export const useCrimeStore = defineStore('crime', {
 
       // Pre-roll result at start (prevents save-scumming)
       const successRate = calculateCrimeSuccess(crime, player.stats, player.crimeXP, player.filotimo)
-      const roll = Math.floor(Math.random() * 100) + 1
-      const targetRoll = Math.floor(successRate * 100)
-      const succeeded = roll <= targetRoll
+      const { roll, targetRoll, success: succeeded } = rollD10(successRate)
 
       const preRolled = { success: succeeded, roll, targetRoll, successRate }
 

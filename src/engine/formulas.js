@@ -126,3 +126,36 @@ export function calculateBribeCost(remainingTimeMs) {
   const seconds = Math.ceil(remainingTimeMs / 1000)
   return Math.max(50, seconds)
 }
+
+/**
+ * Convert a probability (0-1) to d10 dice values.
+ * Returns { roll (1-10), targetRoll (1-10), success }.
+ * High roll = success. "Φέρε targetRoll και πάνω" to win.
+ * Actual success is determined by exact probability, then a matching d10 roll is picked.
+ */
+export function rollD10(successRate) {
+  // Determine actual success using exact probability
+  const success = Math.random() < successRate
+
+  // Calculate d10 target: number you must roll >= to win
+  // For 80% chance: target = 3 (rolling 3-10 = 8/10 = 80%)
+  // For 50% chance: target = 6 (rolling 6-10 = 5/10 = 50%)
+  // For 30% chance: target = 8 (rolling 8-10 = 3/10 = 30%)
+  const target = Math.max(1, Math.min(10, 11 - Math.round(successRate * 10)))
+
+  // Pick a display roll that matches the outcome
+  let roll
+  if (success) {
+    // Random from winning range [target, 10]
+    roll = target + Math.floor(Math.random() * (11 - target))
+  } else {
+    // Random from losing range [1, target-1]
+    if (target <= 1) {
+      roll = 1 // edge case: 100% success shouldn't fail, but just in case
+    } else {
+      roll = 1 + Math.floor(Math.random() * (target - 1))
+    }
+  }
+
+  return { roll, targetRoll: target, success }
+}

@@ -8,13 +8,24 @@
           <span class="dice-header-label">{{ result.label }}</span>
         </div>
 
-        <!-- Target info -->
+        <!-- Target info: "Φέρε 6 και πάνω" -->
         <div class="dice-target">
-          Πιθανότητα: <strong class="text-accent">{{ result.targetRoll }}%</strong>
+          🎲 Φέρε <strong class="text-accent">{{ result.targetRoll }}</strong> και πάνω
         </div>
-        <div class="dice-chance-bar">
-          <div class="dice-chance-fill" :style="{ width: result.targetRoll + '%' }" />
-          <div class="dice-chance-label">{{ result.targetRoll }}%</div>
+        <!-- Visual scale 1-10 -->
+        <div class="dice-scale">
+          <div
+            v-for="n in 10"
+            :key="n"
+            class="scale-pip"
+            :class="{
+              'pip-win': n >= result.targetRoll,
+              'pip-lose': n < result.targetRoll,
+              'pip-landed': phase === 'result' && n === result.roll,
+            }"
+          >
+            {{ n }}
+          </div>
         </div>
 
         <!-- Dice display -->
@@ -67,7 +78,7 @@ const props = defineProps({
   result: {
     type: Object,
     default: null,
-    // Expected: { success, roll, targetRoll, label, icon, rewards: { cash, xp, crimeXP, items, statGain }, consequence }
+    // Expected: { success, roll (1-10), targetRoll (1-10), label, icon, rewards, consequence }
   },
   visible: {
     type: Boolean,
@@ -78,7 +89,7 @@ const props = defineProps({
 const emit = defineEmits(['dismiss'])
 
 const phase = ref('idle') // 'idle' | 'spinning' | 'result'
-const displayNumber = ref(0)
+const displayNumber = ref(1)
 let spinInterval = null
 let spinTimeout = null
 
@@ -110,17 +121,15 @@ watch(() => props.visible, (val) => {
 
 function startAnimation() {
   phase.value = 'spinning'
-  displayNumber.value = Math.floor(Math.random() * 100) + 1
+  displayNumber.value = Math.floor(Math.random() * 10) + 1
 
-  // Spin rapidly for 2 seconds
   spinInterval = setInterval(() => {
-    displayNumber.value = Math.floor(Math.random() * 100) + 1
-  }, 60)
+    displayNumber.value = Math.floor(Math.random() * 10) + 1
+  }, 80)
 
   spinTimeout = setTimeout(() => {
     clearInterval(spinInterval)
     spinInterval = null
-    // Land on actual roll
     displayNumber.value = props.result.roll
     phase.value = 'result'
   }, 2000)
@@ -171,7 +180,7 @@ onBeforeUnmount(cleanup)
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-lg);
   padding: var(--space-lg);
-  max-width: 340px;
+  max-width: 360px;
   width: 100%;
   text-align: center;
 }
@@ -187,34 +196,45 @@ onBeforeUnmount(cleanup)
 }
 
 .dice-target {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-md);
   color: var(--text-secondary);
-  margin-bottom: var(--space-xs);
+  margin-bottom: var(--space-sm);
 }
 
-.dice-chance-bar {
-  position: relative;
-  height: 8px;
-  background: rgba(231, 76, 60, 0.3);
-  border-radius: var(--border-radius-full);
-  overflow: hidden;
+/* Visual scale 1-10 */
+.dice-scale {
+  display: flex;
+  gap: 2px;
+  justify-content: center;
   margin-bottom: var(--space-md);
 }
 
-.dice-chance-fill {
-  height: 100%;
-  background: var(--color-success);
-  border-radius: var(--border-radius-full);
-  transition: width 0.5s;
+.scale-pip {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: var(--font-weight-bold);
+  font-family: var(--font-family-mono);
+  border-radius: 4px;
+  transition: all 0.3s;
 }
 
-.dice-chance-label {
-  position: absolute;
-  top: -1px;
-  right: 4px;
-  font-size: 8px;
-  color: var(--text-secondary);
-  line-height: 10px;
+.scale-pip.pip-lose {
+  background: rgba(231, 76, 60, 0.2);
+  color: var(--color-danger);
+}
+
+.scale-pip.pip-win {
+  background: rgba(46, 204, 113, 0.2);
+  color: var(--color-success);
+}
+
+.scale-pip.pip-landed {
+  outline: 2px solid var(--text-primary);
+  transform: scale(1.15);
 }
 
 .dice-display {
@@ -230,7 +250,7 @@ onBeforeUnmount(cleanup)
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2.5rem;
+  font-size: 3rem;
   font-weight: var(--font-weight-bold);
   font-family: var(--font-family-mono);
   border-radius: var(--border-radius-lg);
@@ -262,8 +282,8 @@ onBeforeUnmount(cleanup)
 
 @keyframes diceSpin {
   0% { transform: scale(1) rotate(0deg); }
-  50% { transform: scale(1.05) rotate(2deg); }
-  100% { transform: scale(1) rotate(-2deg); }
+  50% { transform: scale(1.05) rotate(3deg); }
+  100% { transform: scale(1) rotate(-3deg); }
 }
 
 @keyframes successPulse {

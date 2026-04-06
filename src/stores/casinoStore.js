@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { getCasinoGameById } from '../data/casino'
+import { rollD10 } from '../engine/formulas'
 import { usePlayerStore } from './playerStore'
 import { useGameStore } from './gameStore'
 
@@ -54,16 +55,23 @@ export const useCasinoStore = defineStore('casino', {
       let roll, targetRoll, success
 
       if (game.requiresChoice && playerChoice !== null) {
-        // Number guessing games
+        // Number guessing games — special d10: exact match
         const [min, max] = game.choiceRange
-        roll = min + Math.floor(Math.random() * (max - min + 1))
-        targetRoll = playerChoice
-        success = roll === playerChoice
+        const actualNumber = min + Math.floor(Math.random() * (max - min + 1))
+        success = actualNumber === playerChoice
+        // Map to d10 visual: if match, show high roll; if miss, show low
+        targetRoll = Math.max(1, Math.min(10, 11 - Math.round(game.winChance * 10)))
+        if (success) {
+          roll = targetRoll + Math.floor(Math.random() * (11 - targetRoll))
+        } else {
+          roll = targetRoll <= 1 ? 1 : 1 + Math.floor(Math.random() * (targetRoll - 1))
+        }
       } else {
-        // Probability-based games
-        roll = Math.floor(Math.random() * 100) + 1
-        targetRoll = Math.floor(game.winChance * 100)
-        success = roll <= targetRoll
+        // Probability-based games — use d10
+        const result = rollD10(game.winChance)
+        roll = result.roll
+        targetRoll = result.targetRoll
+        success = result.success
       }
 
       let winnings = 0
