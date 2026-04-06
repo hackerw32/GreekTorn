@@ -8,26 +8,44 @@
           <span class="dice-header-label">{{ result?.label }}</span>
         </div>
 
-        <!-- Target info -->
-        <div class="dice-target">
-          Χρειάζεσαι
-          <strong class="text-accent">{{ result?.targetRoll }}+</strong>
-          για επιτυχία
-        </div>
+        <!-- Check mode: pip scale with target -->
+        <template v-if="mode === 'check'">
+          <div class="dice-target">
+            Χρειάζεσαι <strong class="text-accent">{{ result?.targetRoll }}+</strong> για επιτυχία
+          </div>
+          <div class="pip-scale">
+            <div
+              v-for="n in 6"
+              :key="n"
+              class="pip-box"
+              :class="{
+                'pip-win': n >= (result?.targetRoll ?? 7),
+                'pip-lose': n < (result?.targetRoll ?? 7),
+                'pip-landed': phase === 'result' && n === result?.roll,
+              }"
+            >{{ n }}</div>
+          </div>
+        </template>
 
-        <!-- Pip scale (1-6) -->
-        <div class="pip-scale">
-          <div
-            v-for="n in 6"
-            :key="n"
-            class="pip-box"
-            :class="{
-              'pip-win': n >= (result?.targetRoll ?? 7),
-              'pip-lose': n < (result?.targetRoll ?? 7),
-              'pip-landed': phase === 'result' && n === result?.roll,
-            }"
-          >{{ n }}</div>
-        </div>
+        <!-- Multiplier mode: multiplier reference table -->
+        <template v-else>
+          <div class="dice-target">Ρίξε το ζάρι — καλύτερη ρίψη, μεγαλύτερο κέρδος!</div>
+          <div class="mult-table">
+            <div
+              v-for="[face, mult] in Object.entries(GYM_MULTIPLIERS)"
+              :key="face"
+              class="mult-cell"
+              :class="{
+                'mult-landed': phase === 'result' && Number(face) === result?.roll,
+                'mult-low': mult < 1,
+                'mult-high': mult >= 1.5,
+              }"
+            >
+              <span class="mult-face">{{ face }}</span>
+              <span class="mult-val">x{{ mult }}</span>
+            </div>
+          </div>
+        </template>
 
         <!-- 3D Die -->
         <div class="die-scene">
@@ -35,8 +53,8 @@
             class="die"
             :class="{
               'die-rolling': phase === 'rolling',
-              'die-success': phase === 'result' && result?.success,
-              'die-fail': phase === 'result' && !result?.success,
+              'die-success': phase === 'result' && (mode === 'multiplier' || result?.success),
+              'die-fail': phase === 'result' && mode === 'check' && !result?.success,
             }"
           >
             <div
@@ -60,18 +78,27 @@
         <!-- Result -->
         <transition name="slide-up">
           <div v-if="phase === 'result'" class="dice-result">
-            <div class="result-badge" :class="result?.success ? 'badge-success' : 'badge-danger'">
-              {{ result?.success ? 'Επιτυχία!' : 'Αποτυχία!' }}
-            </div>
+            <!-- Check mode: success/fail -->
+            <template v-if="mode === 'check'">
+              <div class="result-badge" :class="result?.success ? 'badge-success' : 'badge-danger'">
+                {{ result?.success ? 'Επιτυχία!' : 'Αποτυχία!' }}
+              </div>
+            </template>
+            <!-- Multiplier mode: show the multiplier -->
+            <template v-else>
+              <div class="result-badge" :class="result?.multiplier >= 1 ? 'badge-success' : 'badge-warning'">
+                x{{ result?.multiplier }} — {{ multLabel }}
+              </div>
+            </template>
 
-            <div v-if="result?.success && rewardLines.length" class="dice-rewards">
+            <div v-if="rewardLines.length" class="dice-rewards">
               <div v-for="(reward, i) in rewardLines" :key="i" class="reward-line">
                 <span class="reward-icon">{{ reward.icon }}</span>
                 <span>{{ reward.text }}</span>
               </div>
             </div>
 
-            <div v-if="!result?.success && result?.consequence" class="dice-consequence">
+            <div v-if="mode === 'check' && !result?.success && result?.consequence" class="dice-consequence">
               {{ result.consequence }}
             </div>
 
@@ -96,6 +123,17 @@ const DOT_POSITIONS = {
   6: [[30, 24], [70, 24], [30, 50], [70, 50], [30, 76], [70, 76]],
 }
 
+const GYM_MULTIPLIERS = { 1: 0.5, 2: 0.8, 3: 1.0, 4: 1.3, 5: 1.5, 6: 2.0 }
+
+const MULT_LABELS = {
+  0.5: 'Άσχημα...',
+  0.8: 'Όχι και τόσο καλά',
+  1.0: 'Κανονικά',
+  1.3: 'Καλή προπόνηση!',
+  1.5: 'Πολύ καλά!',
+  2.0: 'Τέλεια προπόνηση!',
+}
+
 const props = defineProps({
   result: { type: Object, default: null },
   visible: { type: Boolean, default: false },
@@ -103,17 +141,22 @@ const props = defineProps({
 
 const emit = defineEmits(['dismiss'])
 
+// mode derived from result prop
+const mode = computed(() => props.result?.mode === 'multiplier' ? 'multiplier' : 'check')
+
 const phase = ref('idle')   // 'idle' | 'rolling' | 'result'
 const displayFace = ref(1)
 let spinInterval = null
+
+const multLabel = computed(() => MULT_LABELS[props.result?.multiplier] ?? '')
 
 const rewardLines = computed(() => {
   if (!props.result?.rewards) return []
   const r = props.result.rewards
   const lines = []
-  if (r.cash)    lines.push({ icon: '💰', text: `+€${r.cash.toLocaleString('el-GR')}` })
-  if (r.xp)     lines.push({ icon: '⭐', text: `+${r.xp} XP` })
-  if (r.crimeXP) lines.push({ icon: '🎭', text: `+${r.crimeXP} Crime XP` })
+  if (r.cash)     lines.push({ icon: '💰', text: `+€${r.cash.toLocaleString('el-GR')}` })
+  if (r.xp)      lines.push({ icon: '⭐', text: `+${r.xp} XP` })
+  if (r.crimeXP)  lines.push({ icon: '🎭', text: `+${r.crimeXP} Crime XP` })
   if (r.statGain) lines.push({ icon: '💪', text: `+${r.statGain.toFixed(2)} ${r.statName || ''}` })
   if (r.filotimo) lines.push({ icon: '⚖️', text: `${r.filotimo > 0 ? '+' : ''}${r.filotimo} Φιλότιμο` })
   if (r.items?.length) {
@@ -197,11 +240,11 @@ onBeforeUnmount(cleanup)
 }
 
 .dice-target {
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-sm);
   color: var(--text-secondary);
 }
 
-/* Pip scale */
+/* Pip scale (check mode) */
 .pip-scale {
   display: flex;
   gap: 6px;
@@ -236,6 +279,53 @@ onBeforeUnmount(cleanup)
 .pip-box.pip-landed {
   outline: 2px solid var(--text-primary);
   transform: scale(1.2);
+}
+
+/* Multiplier table (gym mode) */
+.mult-table {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  width: 100%;
+}
+
+.mult-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--space-xs);
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border-color);
+  background: var(--bg-surface-raised);
+  transition: all 0.3s;
+}
+
+.mult-cell.mult-low {
+  color: var(--color-danger);
+  border-color: rgba(231, 76, 60, 0.3);
+}
+
+.mult-cell.mult-high {
+  color: var(--color-success);
+  border-color: rgba(46, 204, 113, 0.3);
+}
+
+.mult-cell.mult-landed {
+  outline: 2px solid var(--text-primary);
+  transform: scale(1.1);
+  background: var(--bg-base);
+}
+
+.mult-face {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  font-family: var(--font-family-mono);
+}
+
+.mult-val {
+  font-size: var(--font-size-xs);
+  font-family: var(--font-family-mono);
 }
 
 /* Die */
@@ -357,6 +447,11 @@ onBeforeUnmount(cleanup)
 .badge-danger {
   background: rgba(231, 76, 60, 0.15);
   color: var(--color-danger);
+}
+
+.badge-warning {
+  background: rgba(243, 156, 18, 0.15);
+  color: var(--color-warning);
 }
 
 .dice-rewards {

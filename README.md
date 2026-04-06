@@ -1,82 +1,83 @@
-# Χάος (Chaos) - Greek Text-Based RPG
+# Χάος — Greek RPG
 
-A Greek-themed text-based browser RPG inspired by Torn City. Built with Vue 3, Pinia, and Vite.
+**[Παίξε εδώ / Play Now](https://hackerw32.github.io/GreekTorn/)**
 
-**[Play Now](https://hackerw32.github.io/GreekTorn/)**
+Ένα Greek-themed browser RPG εμπνευσμένο από το Torn City. Φτιάξε τον χαρακτήρα σου, κάνε εγκλήματα, γυμνάσου, ταξίδεψε σε όλη την Ελλάδα και χτίσε την εγκληματική σου αυτοκρατορία.
 
-## About
+---
 
-Χάος is a single-player RPG set in the Greek underworld. You create a character, commit crimes, train at the gym, fight NPCs, travel across Greece, and build your criminal empire — all in Greek.
+## Πώς παίζεται
 
-## Features
+### Δημιουργία Χαρακτήρα
+Διαλέγεις όνομα και μοιράζεις αρχικούς πόντους σε 4 στατιστικά:
+- **Δύναμη** — Επηρεάζει τη ζημιά στις μάχες
+- **Ταχύτητα** — Καθορίζει ποιος χτυπάει πρώτος
+- **Επιδεξιότητα** — Βοηθάει στην αποφυγή χτυπημάτων και δραπετεύσεις
+- **Άμυνα** — Μειώνει τη ζημιά που δέχεσαι
 
-### Core Gameplay
-- **Character Creation** — Allocate stat points (Strength, Speed, Dexterity, Defense)
-- **Real-time Regeneration** — HP, Energy, Nerve, and Happiness regenerate over time
-- **Activity System** — Time-based actions with live countdown timers and dice roll animations
-- **Save System** — Auto-save to localStorage + JSON export/import
+### Πόροι
+Τα 4 πράγματα που πρέπει να διαχειριστείς:
+- **HP** — Υγεία. Αν μηδενιστεί, πας νοσοκομείο.
+- **Ενέργεια** — Χρειάζεται για γυμναστήριο και αγγαρείες
+- **Θράσος** — Χρειάζεται για εγκλήματα
+- **Κέφι** — Επηρεάζει τα αποτελέσματα γυμναστηρίου. Μειώνεται σταδιακά.
 
-### Crime System
-- 8 crime tiers from pickpocketing to antiquities trafficking
-- Each crime takes real time (1-10 minutes)
-- Pre-rolled dice results with animated reveal
-- Risk of jail with escape and bribe mechanics (Φακελάκι)
+Όλοι αναπληρώνονται με τον χρόνο, ακόμα και όταν δεν παίζεις.
 
-### Gym & Training
-- 4 stat categories with 5 exercises each (20 total)
-- Exercises unlock as you level up
-- Higher-tier exercises take longer but give better stat gains
-- Happiness multiplier affects training results
+---
 
-### Combat
-- 15 NPCs across 5 difficulty tiers
-- Turn-based combat with detailed combat log
-- Weapon and armor equipment system
+## Δραστηριότητες
 
-### Jobs & Economy
-- 7 Greek-themed jobs with 5 ranks each
-- 7 property tiers (studio apartment to private island)
-- Vault system for secure cash storage
-- ~30 items: weapons, armor, medical supplies, drugs, misc
+### Εγκλήματα
+8 επίπεδα εγκλημάτων, από κλοπή περιπτέρου μέχρι αρχαιοκαπηλία. Κάθε έγκλημα παίρνει πραγματικό χρόνο (1-10 λεπτά). Όταν τελειώσει ο χρόνος, ρίχνεις το ζάρι για να δεις αν τα κατάφερες. Αν πιαστείς, πας φυλακή.
 
-### Greek Cultural Mechanics
-- **Φιλότιμο (Filotimo)** — Honor system that affects high-tier crimes and promotions
-- **Μέσον (Meson)** — Connections that help with escapes and special actions
-- **Φακελάκι (Fakelaki)** — Bribe system for getting out of jail
+### Γυμναστήριο
+4 κατηγορίες (Δύναμη, Ταχύτητα, Επιδεξιότητα, Άμυνα) με 5 ασκήσεις η καθεμία. Οι καλύτερες ασκήσεις ξεκλειδώνουν καθώς ανεβαίνεις επίπεδο. Μετά την προπόνηση ρίχνεις το ζάρι — το αποτέλεσμα πολλαπλασιάζει το κέρδος στατιστικού:
+- **1** → x0.5 (κακή μέρα)
+- **3** → x1.0 (κανονικά)
+- **6** → x2.0 (τέλεια προπόνηση!)
 
-### Phase 2: Advanced Systems
-- **Travel** — 7 Greek cities and islands (Athens, Thessaloniki, Patras, Heraklion, Mykonos, Santorini, Corfu) with unique location bonuses
-- **Education** — University courses in IT, Law, Medicine, Sports, and Business that grant permanent bonuses
-- **Casino** — 5 OPAP-style betting games with dice animations (Coin Flip, Dice, Lucky Dice, Number Guess, PROTO)
-- **Stock Market** — 8 fictional Greek company stocks with live price fluctuations, dividends, and portfolio tracking
+### Μάχες
+15 αντίπαλοι σε 5 επίπεδα δυσκολίας. Η μάχη γίνεται αυτόματα με turn-based σύστημα. Κερδίζεις XP, χρήματα και αντικείμενα. Αν χάσεις, πας νοσοκομείο.
 
-## Tech Stack
+### Δουλειά
+7 νόμιμες δουλειές. Μαζεύεις μισθό μία φορά κάθε 24 ώρες.
 
-- **Vue 3** — Composition API with `<script setup>`
-- **Pinia** — 12 modular stores with serialization/hydration
-- **Vue Router** — Hash-based routing (Capacitor-ready)
-- **Vite** — Fast builds and HMR
-- **CSS Custom Properties** — Greek blue/white theme
+### Ακίνητα
+Αγόρασε ακίνητα που δίνουν παθητικό εισόδημα κάθε μέρα.
 
-## Development
+---
 
-```bash
-npm install
-npm run dev     # Start dev server at localhost:3000
-npm run build   # Production build to dist/
-```
+## Ταξίδια
+Ταξίδεψε σε 7 πόλεις και νησιά: Αθήνα, Θεσσαλονίκη, Πάτρα, Ηράκλειο, Μύκονος, Σαντορίνη, Κέρκυρα. Κάθε τοποθεσία δίνει διαφορετικά μπόνους (καλύτερα έσοδα εγκλημάτων, εκπτώσεις, καλύτερο γυμναστήριο).
 
-## Deployment
+## Εκπαίδευση
+Πανεπιστημιακά μαθήματα σε IT, Νομική, Ιατρική, Αθλητισμό, Επιχειρήσεις. Κάθε μάθημα παίρνει χρόνο αλλά δίνει μόνιμα μπόνους.
 
-Automatically deployed to GitHub Pages via GitHub Actions on every push to `main`.
+## Καζίνο
+5 παιχνίδια: Κορώνα-Γράμματα, Ζάρι, Lucky Dice, Μαντεψε τον Αριθμό, PROTO. Κάθε αποτέλεσμα αποκαλύπτεται με ζάρι.
 
-## Future Plans
+## Χρηματιστήριο
+8 ελληνικές εταιρείες. Αγόρασε και πούλα μετοχές, κέρδισε μερίσματα. Οι τιμές αλλάζουν συνεχώς.
 
-- Online multiplayer
-- More drugs with cooldowns/addiction
-- Current events integration
-- Capacitor build for Android
+---
 
-## License
+## Ελληνικές μηχανικές
 
-MIT
+- **Φιλότιμο** — Ο κώδικας τιμής σου. Επηρεάζει τα μεγάλα εγκλήματα.
+- **Μέσον** — Γνωριμίες που βοηθούν σε δραπετεύσεις και ειδικές ενέργειες.
+- **Φακελάκι** — Δωροδόκησε για να βγεις νωρίτερα από τη φυλακή.
+
+---
+
+## Σύστημα ζαριού
+Το παιχνίδι χρησιμοποιεί ζάρι 6 πλευρών (d6). Ο παίκτης σταματάει μόνος το ζάρι πατώντας "Σταμάτα!". Το αποτέλεσμα είναι ήδη αποφασισμένο από τη στιγμή που ξεκίνησε η δραστηριότητα — δεν μπορείς να κάνεις reload για να πάρεις καλύτερο.
+
+- **Εγκλήματα**: Πρέπει να φέρεις X+ για να πετύχεις (όσο πιο δύσκολο, τόσο πιο ψηλό το X)
+- **Γυμναστήριο**: Κάθε αριθμός δίνει διαφορετικό πολλαπλασιαστή (1=x0.5 έως 6=x2.0)
+- **Καζίνο**: Άμεσο αποτέλεσμα
+
+---
+
+## Αποθήκευση
+Το παιχνίδι αποθηκεύεται αυτόματα κάθε 30 δευτερόλεπτα. Μπορείς επίσης να εξαγάγεις/εισαγάγεις το save ως αρχείο JSON από τις Ρυθμίσεις. Ο χρόνος που έλειπες μετράει — επιστρέφεις και οι πόροι έχουν αναπληρωθεί (μέχρι 24 ώρες offline).

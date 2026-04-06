@@ -158,6 +158,9 @@ function canDoExercise(ex) {
     && player.resources.energy.current >= ex.energyCost
 }
 
+// Dice multipliers for gym: roll 1-6 → stat gain multiplier
+const GYM_MULTIPLIERS = { 1: 0.5, 2: 0.8, 3: 1.0, 4: 1.3, 5: 1.5, 6: 2.0 }
+
 function startExercise(ex) {
   if (!canDoExercise(ex)) return
 
@@ -166,16 +169,16 @@ function startExercise(ex) {
   // Deduct energy now
   player.modifyResource('energy', -ex.energyCost)
 
-  // Pre-roll stat gain
+  // Pre-roll BASE stat gain (without dice multiplier — dice applies at reveal)
   const baseGain = calculateStatGain(
     gym,
     player.resources.happiness.current,
     player.resources.happiness.max
   )
-  const gain = baseGain * ex.multiplier * travelStore.gymBoostMultiplier
+  const baseGainWithExercise = baseGain * ex.multiplier * travelStore.gymBoostMultiplier
 
-  // Gym always succeeds — show a high d6 roll (5 or 6) for fun
-  const roll = 5 + Math.floor(Math.random() * 2) // 5 or 6
+  // Pre-roll the d6 now (prevents save-scumming); player doesn't see it until they stop the die
+  const roll = Math.floor(Math.random() * 6) + 1
 
   const statLabel = statDefs.find(s => s.key === selectedStat.value)?.label || selectedStat.value
 
@@ -186,11 +189,9 @@ function startExercise(ex) {
     icon: ex.icon,
     duration: ex.duration,
     preRolled: {
-      success: true,
       roll,
-      targetRoll: 1, // gym always succeeds (need ≥1 on d6)
       rewards: {
-        statGain: gain,
+        baseStatGain: baseGainWithExercise, // multiplier applied at reveal
         statName: statLabel,
         statKey: selectedStat.value,
       },
@@ -205,15 +206,20 @@ function openDice() {
   const result = player.pendingResult
   if (!result || result.type !== 'gym') return
 
+  const roll = result.roll
+  const mult = GYM_MULTIPLIERS[roll] ?? 1.0
+  const finalGain = result.rewards.baseStatGain * mult
+
   diceResult.value = {
-    success: true,
-    roll: result.roll,
-    targetRoll: result.targetRoll,
+    mode: 'multiplier',
+    roll,
     label: result.label,
     icon: result.icon,
+    multiplier: mult,
     rewards: {
-      statGain: result.rewards.statGain,
+      statGain: finalGain,
       statName: result.rewards.statName,
+      statKey: result.rewards.statKey,
     },
   }
   showDice.value = true
@@ -223,10 +229,13 @@ function onDiceDismiss() {
   showDice.value = false
   const result = player.pendingResult
   if (result && result.type === 'gym') {
-    const r = result.rewards
-    player.trainStat(r.statKey, r.statGain)
-    player.logActivity(`💪 ${r.statName}: +${r.statGain.toFixed(3)}`, 'info')
-    gameStore.addNotification(`${r.statName}: +${r.statGain.toFixed(3)}`, 'success')
+    // Use the final gain computed in openDice (with dice multiplier)
+    const r = diceResult.value?.rewards
+    if (r) {
+      player.trainStat(r.statKey, r.statGain)
+      player.logActivity(`💪 ${r.statName}: +${r.statGain.toFixed(3)}`, 'info')
+      gameStore.addNotification(`${r.statName}: +${r.statGain.toFixed(3)}`, 'success')
+    }
     player.clearPendingResult()
     gameStore.saveGame()
   }
