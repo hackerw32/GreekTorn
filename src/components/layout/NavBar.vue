@@ -17,15 +17,14 @@
       <span class="nav-label">Άλλα</span>
     </div>
 
-    <!-- Extra items (always visible in sidebar, expandable on mobile) -->
-    <template v-if="vertical || showMore">
+    <!-- Extra items (sidebar only — mobile uses overlay popup) -->
+    <template v-if="vertical">
       <router-link
         v-for="item in extraItems"
         :key="item.to"
         :to="item.to"
         class="nav-item"
         :class="{ active: isActive(item.to) }"
-        @click="showMore = false"
       >
         <span class="nav-icon">{{ item.icon }}</span>
         <span class="nav-label">{{ item.label }}</span>

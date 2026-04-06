@@ -10,7 +10,11 @@
 
         <!-- Target info -->
         <div class="dice-target">
-          Χρειάζεσαι ≤ <strong class="text-accent">{{ result.targetRoll }}</strong> στα 100
+          Πιθανότητα: <strong class="text-accent">{{ result.targetRoll }}%</strong>
+        </div>
+        <div class="dice-chance-bar">
+          <div class="dice-chance-fill" :style="{ width: result.targetRoll + '%' }" />
+          <div class="dice-chance-label">{{ result.targetRoll }}%</div>
         </div>
 
         <!-- Dice display -->
@@ -185,7 +189,32 @@ onBeforeUnmount(cleanup)
 .dice-target {
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
+  margin-bottom: var(--space-xs);
+}
+
+.dice-chance-bar {
+  position: relative;
+  height: 8px;
+  background: rgba(231, 76, 60, 0.3);
+  border-radius: var(--border-radius-full);
+  overflow: hidden;
   margin-bottom: var(--space-md);
+}
+
+.dice-chance-fill {
+  height: 100%;
+  background: var(--color-success);
+  border-radius: var(--border-radius-full);
+  transition: width 0.5s;
+}
+
+.dice-chance-label {
+  position: absolute;
+  top: -1px;
+  right: 4px;
+  font-size: 8px;
+  color: var(--text-secondary);
+  line-height: 10px;
 }
 
 .dice-display {

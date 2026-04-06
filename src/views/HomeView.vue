@@ -176,6 +176,12 @@ function formatTimeAgo(timestamp) {
   gap: var(--space-sm);
 }
 
+@media (min-width: 768px) {
+  .quick-actions {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
 .action-card {
   display: flex;
   flex-direction: column;

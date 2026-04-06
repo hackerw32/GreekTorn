@@ -101,7 +101,7 @@ watch(() => gameStore.initialized, (val) => {
     grid-row: 2;
     grid-column: 2;
     padding-bottom: var(--space-md);
-    max-width: 800px;
+    padding: var(--space-lg) var(--space-xl);
   }
 
   .bottom-nav {
