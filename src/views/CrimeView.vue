@@ -1,0 +1,324 @@
+<template>
+  <div class="crime-page">
+    <h2 class="page-title">🎭 Εγκλήματα</h2>
+    <div class="crime-xp-bar card">
+      <div class="flex flex-between">
+        <span class="text-muted">Εγκληματική Εμπειρία</span>
+        <span class="text-mono text-accent">{{ player.crimeXP }} XP</span>
+      </div>
+    </div>
+
+    <!-- Active crime in progress -->
+    <div v-if="player.activeActivity && player.activeActivity.type === 'crime'" class="card activity-card">
+      <div class="activity-header">
+        <span class="activity-icon">{{ player.activeActivity.icon }}</span>
+        <div>
+          <strong>{{ player.activeActivity.label }}</strong>
+          <p class="text-muted" style="font-size: var(--font-size-xs)">Σε εξέλιξη...</p>
+        </div>
+      </div>
+      <div class="activity-progress-track">
+        <div class="activity-progress-fill" :style="{ width: (player.activityProgress * 100) + '%' }" />
+      </div>
+      <div class="activity-time text-mono text-accent">
+        {{ formatTime(player.activityTimeRemaining) }}
+      </div>
+    </div>
+
+    <!-- Busy with non-crime activity -->
+    <div v-else-if="player.activeActivity" class="card busy-card">
+      <p class="text-muted">Είσαι απασχολημένος με: <strong>{{ player.activeActivity.label }}</strong></p>
+      <p class="text-mono text-accent">{{ formatTime(player.activityTimeRemaining) }}</p>
+    </div>
+
+    <!-- Available crimes -->
+    <div v-if="!player.activeActivity" class="crime-list">
+      <div
+        v-for="crime in crimeStore.availableCrimes"
+        :key="crime.id"
+        class="card crime-card"
+        :class="{ disabled: !canDoCrime(crime) }"
+        @click="doCrime(crime)"
+      >
+        <div class="crime-header">
+          <span class="crime-icon">{{ crime.icon }}</span>
+          <div class="crime-info">
+            <strong class="crime-name">{{ crime.name }}</strong>
+            <p class="crime-desc text-muted">{{ crime.description }}</p>
+          </div>
+        </div>
+        <div class="crime-stats">
+          <span class="badge badge-purple">{{ crime.nerveCost }} Θράσος</span>
+          <span class="badge" :class="successBadgeClass(crime)">
+            {{ Math.floor(crimeStore.getCrimeSuccessRate(crime.id) * 100) }}%
+          </span>
+          <span class="text-muted text-mono" style="font-size: var(--font-size-xs)">
+            €{{ crime.rewards.cashMin }}-{{ crime.rewards.cashMax }}
+          </span>
+          <span class="badge badge-muted">{{ formatDuration(crime.duration) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Locked crimes -->
+    <div v-if="crimeStore.lockedCrimes.length > 0 && !player.activeActivity" class="locked-section">
+      <h3 class="text-muted mt-lg mb-sm">🔒 Κλειδωμένα</h3>
+      <div class="crime-list">
+        <div
+          v-for="crime in crimeStore.lockedCrimes"
+          :key="crime.id"
+          class="card crime-card locked"
+        >
+          <div class="crime-header">
+            <span class="crime-icon" style="opacity: 0.4">{{ crime.icon }}</span>
+            <div class="crime-info">
+              <strong class="crime-name" style="opacity: 0.5">{{ crime.name }}</strong>
+              <p class="text-muted" style="font-size: var(--font-size-xs)">
+                Απαιτεί {{ crime.requiredCrimeXP }} Crime XP
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dice Roll Animation -->
+    <DiceRoll
+      :visible="showDice"
+      :result="diceResult"
+      @dismiss="onDiceDismiss"
+    />
+  </div>
+</template>
+
+<script setup>
+import { ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { usePlayerStore } from '../stores/playerStore'
+import { useCrimeStore } from '../stores/crimeStore'
+import { useGameStore } from '../stores/gameStore'
+import { getItemById } from '../data/items'
+import DiceRoll from '../components/ui/DiceRoll.vue'
+
+const player = usePlayerStore()
+const crimeStore = useCrimeStore()
+const gameStore = useGameStore()
+const router = useRouter()
+
+const showDice = ref(false)
+const diceResult = ref(null)
+
+function canDoCrime(crime) {
+  return player.canAct && player.resources.nerve.current >= crime.nerveCost
+}
+
+function successBadgeClass(crime) {
+  const rate = crimeStore.getCrimeSuccessRate(crime.id)
+  if (rate >= 0.7) return 'badge-success'
+  if (rate >= 0.4) return 'badge-warning'
+  return 'badge-danger'
+}
+
+function doCrime(crime) {
+  if (!canDoCrime(crime)) return
+  const result = crimeStore.startCrime(crime.id)
+  if (!result.started) {
+    gameStore.addNotification(result.message, 'danger')
+  }
+}
+
+// Watch for pending result (activity completed)
+watch(() => player.pendingResult, (result) => {
+  if (result && result.type === 'crime') {
+    // Build dice result for animation
+    const rewards = result.success ? result.rewards : null
+    let rewardDisplay = null
+    let consequence = null
+
+    if (result.success && rewards) {
+      rewardDisplay = {
+        cash: rewards.cash,
+        xp: rewards.xp,
+        crimeXP: rewards.crimeXP,
+        filotimo: rewards.filotimoChange,
+        items: [],
+      }
+      if (rewards.droppedItemId) {
+        const item = getItemById(rewards.droppedItemId)
+        rewardDisplay.items.push(item ? item.name : rewards.droppedItemId)
+      }
+    }
+
+    if (!result.success) {
+      consequence = result.jailed
+        ? `Σε έπιασαν! Φυλακή για ${formatTime(result.jailTime)}`
+        : 'Αποτυχία, αλλά ξέφυγες.'
+    }
+
+    diceResult.value = {
+      success: result.success,
+      roll: result.roll,
+      targetRoll: result.targetRoll,
+      label: result.label,
+      icon: result.icon,
+      rewards: rewardDisplay,
+      consequence,
+      // Keep refs for applying result
+      _raw: result,
+    }
+    showDice.value = true
+  }
+}, { immediate: true })
+
+function onDiceDismiss() {
+  showDice.value = false
+  const raw = diceResult.value?._raw
+  if (raw) {
+    // Apply the pre-rolled result
+    crimeStore.applyCrimeResult(raw)
+    player.clearPendingResult()
+
+    // Redirect to jail if jailed
+    if (!raw.success && raw.jailed) {
+      setTimeout(() => router.push('/jail'), 300)
+    }
+  }
+  diceResult.value = null
+}
+
+function formatTime(ms) {
+  if (ms <= 0) return '0:00'
+  const totalSec = Math.ceil(ms / 1000)
+  const min = Math.floor(totalSec / 60)
+  const sec = totalSec % 60
+  return `${min}:${sec.toString().padStart(2, '0')}`
+}
+
+function formatDuration(ms) {
+  const totalSec = Math.round(ms / 1000)
+  if (totalSec < 60) return `${totalSec}δ`
+  const min = Math.floor(totalSec / 60)
+  return `${min} λεπτ${min === 1 ? 'ό' : 'ά'}`
+}
+</script>
+
+<style scoped>
+.crime-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.page-title {
+  font-size: var(--font-size-2xl);
+}
+
+.crime-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.crime-card {
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.crime-card:hover:not(.disabled):not(.locked) {
+  background: var(--bg-surface-raised);
+  transform: translateX(2px);
+}
+
+.crime-card.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.crime-card.locked {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.crime-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.crime-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.crime-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.crime-name {
+  font-size: var(--font-size-sm);
+}
+
+.crime-desc {
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+}
+
+.crime-stats {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.badge-muted {
+  background: var(--bg-surface-raised);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  padding: 2px 6px;
+  border-radius: var(--border-radius-sm);
+}
+
+/* Activity in progress */
+.activity-card {
+  border-left: 3px solid var(--color-accent);
+}
+
+.activity-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.activity-icon {
+  font-size: 24px;
+}
+
+.activity-progress-track {
+  height: 6px;
+  background: var(--bg-base);
+  border-radius: var(--border-radius-full);
+  overflow: hidden;
+  margin-bottom: var(--space-xs);
+}
+
+.activity-progress-fill {
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: var(--border-radius-full);
+  transition: width 0.5s linear;
+}
+
+.activity-time {
+  text-align: center;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+.busy-card {
+  text-align: center;
+  opacity: 0.7;
+}
+</style>
