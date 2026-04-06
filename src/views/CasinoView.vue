@@ -41,10 +41,9 @@
         <span class="text-muted" style="font-size:var(--font-size-xs)">{{ currentGame.description }}</span>
       </div>
 
-      <SlotsGame    v-if="activeGame === 'slots'"     />
-      <RouletteGame v-else-if="activeGame === 'roulette'" />
+      <SlotsGame     v-if="activeGame === 'slots'"     />
       <BlackjackGame v-else-if="activeGame === 'blackjack'" />
-      <KenoGame     v-else-if="activeGame === 'keno'" />
+      <KenoGame      v-else-if="activeGame === 'keno'" />
     </div>
   </div>
 </template>
@@ -54,7 +53,6 @@ import { ref, computed } from 'vue'
 import { usePlayerStore } from '../stores/playerStore'
 import { useCasinoStore } from '../stores/casinoStore'
 import SlotsGame from '../components/casino/SlotsGame.vue'
-import RouletteGame from '../components/casino/RouletteGame.vue'
 import BlackjackGame from '../components/casino/BlackjackGame.vue'
 import KenoGame from '../components/casino/KenoGame.vue'
 
@@ -63,7 +61,6 @@ const casinoStore = useCasinoStore()
 
 const games = [
   { id: 'slots',     icon: '🎰', label: 'Φρουτάκια', description: '3 τροχοί — ταιριάξτε 3 ίδια σύμβολα στη μεσαία γραμμή' },
-  { id: 'roulette',  icon: '🎡', label: 'Ρουλέτα',   description: 'Ποντάρετε σε αριθμό, χρώμα ή μονό/ζυγό (0-36)' },
   { id: 'blackjack', icon: '🃏', label: 'Black Jack', description: 'Φτάστε στο 21 χωρίς να ξεπεράσετε — κερδίστε τον dealer' },
   { id: 'keno',      icon: '🎯', label: 'Κίνο',       description: 'Διαλέξτε 1-10 αριθμούς και κερδίστε όσο περισσότεροι βγουν' },
 ]
@@ -97,7 +94,7 @@ const currentGame = computed(() => games.find(g => g.id === activeGame.value))
 /* Game tabs */
 .game-tabs {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--space-xs);
 }
 
