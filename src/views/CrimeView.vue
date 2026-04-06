@@ -31,6 +31,20 @@
       <p class="text-mono text-accent">{{ formatTime(player.activityTimeRemaining) }}</p>
     </div>
 
+    <!-- Pending result — player must roll the dice -->
+    <div v-else-if="player.pendingResult && player.pendingResult.type === 'crime'" class="card roll-prompt-card">
+      <div class="roll-prompt-header">
+        <span style="font-size: 28px">{{ player.pendingResult.icon }}</span>
+        <div>
+          <strong>{{ player.pendingResult.label }}</strong>
+          <p class="text-muted" style="font-size: var(--font-size-xs)">Ολοκληρώθηκε — ρίξε το ζάρι!</p>
+        </div>
+      </div>
+      <button class="btn-roll-dice" @click="openDice">
+        🎲 Ρίξε το Ζάρι!
+      </button>
+    </div>
+
     <!-- Available crimes -->
     <div v-if="!player.activeActivity" class="crime-list">
       <div
@@ -127,48 +141,55 @@ function doCrime(crime) {
   }
 }
 
-// Watch for pending result (activity completed)
-watch(() => player.pendingResult, (result) => {
-  if (result && result.type === 'crime') {
-    // Build dice result for animation
-    const rewards = result.success ? result.rewards : null
-    let rewardDisplay = null
-    let consequence = null
+// Player manually opens dice after timer completes
+function openDice() {
+  const result = player.pendingResult
+  if (!result || result.type !== 'crime') return
 
-    if (result.success && rewards) {
-      rewardDisplay = {
-        cash: rewards.cash,
-        xp: rewards.xp,
-        crimeXP: rewards.crimeXP,
-        filotimo: rewards.filotimoChange,
-        items: [],
-      }
-      if (rewards.droppedItemId) {
-        const item = getItemById(rewards.droppedItemId)
-        rewardDisplay.items.push(item ? item.name : rewards.droppedItemId)
-      }
-    }
+  const rewards = result.success ? result.rewards : null
+  let rewardDisplay = null
+  let consequence = null
 
-    if (!result.success) {
-      consequence = result.jailed
-        ? `Σε έπιασαν! Φυλακή για ${formatTime(result.jailTime)}`
-        : 'Αποτυχία, αλλά ξέφυγες.'
+  if (result.success && rewards) {
+    rewardDisplay = {
+      cash: rewards.cash,
+      xp: rewards.xp,
+      crimeXP: rewards.crimeXP,
+      filotimo: rewards.filotimoChange,
+      items: [],
     }
-
-    diceResult.value = {
-      success: result.success,
-      roll: result.roll,
-      targetRoll: result.targetRoll,
-      label: result.label,
-      icon: result.icon,
-      rewards: rewardDisplay,
-      consequence,
-      // Keep refs for applying result
-      _raw: result,
+    if (rewards.droppedItemId) {
+      const item = getItemById(rewards.droppedItemId)
+      rewardDisplay.items.push(item ? item.name : rewards.droppedItemId)
     }
-    showDice.value = true
   }
-}, { immediate: true })
+
+  if (!result.success) {
+    consequence = result.jailed
+      ? `Σε έπιασαν! Φυλακή για ${formatTime(result.jailTime)}`
+      : 'Αποτυχία, αλλά ξέφυγες.'
+  }
+
+  diceResult.value = {
+    success: result.success,
+    roll: result.roll,
+    targetRoll: result.targetRoll,
+    label: result.label,
+    icon: result.icon,
+    rewards: rewardDisplay,
+    consequence,
+    _raw: result,
+  }
+  showDice.value = true
+}
+
+// Re-open dice if page is visited while pendingResult exists (e.g. navigated away and back)
+watch(() => player.pendingResult, (result) => {
+  if (!result || result.type !== 'crime') {
+    showDice.value = false
+    diceResult.value = null
+  }
+}, { immediate: false })
 
 function onDiceDismiss() {
   showDice.value = false
@@ -278,6 +299,45 @@ function formatDuration(ms) {
   font-size: var(--font-size-xs);
   padding: 2px 6px;
   border-radius: var(--border-radius-sm);
+}
+
+/* Roll dice prompt */
+.roll-prompt-card {
+  border-left: 3px solid var(--color-success);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.roll-prompt-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.btn-roll-dice {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-success);
+  color: #fff;
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: 0 4px 12px rgba(46, 204, 113, 0.35);
+  animation: rollPromptPulse 1.2s infinite;
+}
+
+.btn-roll-dice:hover {
+  background: #27ae60;
+  transform: scale(1.02);
+}
+
+@keyframes rollPromptPulse {
+  0%, 100% { box-shadow: 0 4px 12px rgba(46, 204, 113, 0.35); }
+  50%       { box-shadow: 0 4px 22px rgba(46, 204, 113, 0.65); }
 }
 
 /* Activity in progress */

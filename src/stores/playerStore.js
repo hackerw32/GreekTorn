@@ -72,7 +72,8 @@ export const usePlayerStore = defineStore('player', {
 
     statusTimeRemaining() {
       if (!this.statusTimerEnd) return 0
-      return Math.max(0, this.statusTimerEnd - Date.now())
+      // Reference lastTick so this getter recomputes every game loop frame
+      return Math.max(0, this.statusTimerEnd - this.lastTick)
     },
 
     isBusy() {
@@ -85,13 +86,15 @@ export const usePlayerStore = defineStore('player', {
 
     activityTimeRemaining() {
       if (!this.activeActivity) return 0
-      const elapsed = Date.now() - this.activeActivity.startTime
+      // Reference lastTick so this getter recomputes every game loop frame
+      const elapsed = this.lastTick - this.activeActivity.startTime
       return Math.max(0, this.activeActivity.duration - elapsed)
     },
 
     activityProgress() {
       if (!this.activeActivity) return 0
-      const elapsed = Date.now() - this.activeActivity.startTime
+      // Reference lastTick so this getter recomputes every game loop frame
+      const elapsed = this.lastTick - this.activeActivity.startTime
       return Math.min(1, elapsed / this.activeActivity.duration)
     },
 

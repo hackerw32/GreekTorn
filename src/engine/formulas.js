@@ -128,34 +128,46 @@ export function calculateBribeCost(remainingTimeMs) {
 }
 
 /**
- * Convert a probability (0-1) to d10 dice values.
- * Returns { roll (1-10), targetRoll (1-10), success }.
+ * Convert a probability (0-1) to d6 dice values.
+ * Returns { roll (1-6), targetRoll (1-6), success }.
  * High roll = success. "Φέρε targetRoll και πάνω" to win.
- * Actual success is determined by exact probability, then a matching d10 roll is picked.
+ * Actual success is determined by exact probability, then a matching d6 roll is picked.
+ *
+ * Probability → target mapping:
+ *   ~100% → 1  (need 1+, basically always win)
+ *   ~83%  → 2
+ *   ~67%  → 3
+ *   ~50%  → 4
+ *   ~33%  → 5
+ *   ~17%  → 6  (need to roll exactly 6)
  */
-export function rollD10(successRate) {
-  // Determine actual success using exact probability
+export function rollD6(successRate) {
   const success = Math.random() < successRate
+  const target = Math.max(1, Math.min(6, 7 - Math.round(successRate * 6)))
 
-  // Calculate d10 target: number you must roll >= to win
-  // For 80% chance: target = 3 (rolling 3-10 = 8/10 = 80%)
-  // For 50% chance: target = 6 (rolling 6-10 = 5/10 = 50%)
-  // For 30% chance: target = 8 (rolling 8-10 = 3/10 = 30%)
-  const target = Math.max(1, Math.min(10, 11 - Math.round(successRate * 10)))
-
-  // Pick a display roll that matches the outcome
   let roll
   if (success) {
-    // Random from winning range [target, 10]
-    roll = target + Math.floor(Math.random() * (11 - target))
+    roll = target + Math.floor(Math.random() * (7 - target))
   } else {
-    // Random from losing range [1, target-1]
     if (target <= 1) {
-      roll = 1 // edge case: 100% success shouldn't fail, but just in case
+      roll = 1
     } else {
       roll = 1 + Math.floor(Math.random() * (target - 1))
     }
   }
 
+  return { roll, targetRoll: target, success }
+}
+
+/** @deprecated Use rollD6 instead */
+export function rollD10(successRate) {
+  const success = Math.random() < successRate
+  const target = Math.max(1, Math.min(10, 11 - Math.round(successRate * 10)))
+  let roll
+  if (success) {
+    roll = target + Math.floor(Math.random() * (11 - target))
+  } else {
+    roll = target <= 1 ? 1 : 1 + Math.floor(Math.random() * (target - 1))
+  }
   return { roll, targetRoll: target, success }
 }

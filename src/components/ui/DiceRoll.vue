@@ -1,66 +1,78 @@
 <template>
   <transition name="fade">
-    <div class="dice-overlay" v-if="visible" @click.self="skipAnimation">
-      <div class="dice-container" :class="{ 'result-revealed': phase === 'result' }">
+    <div class="dice-overlay" v-if="visible">
+      <div class="dice-container">
         <!-- Header -->
         <div class="dice-header">
-          <span class="dice-header-icon">{{ result.icon || '🎲' }}</span>
-          <span class="dice-header-label">{{ result.label }}</span>
+          <span class="dice-header-icon">{{ result?.icon || '🎲' }}</span>
+          <span class="dice-header-label">{{ result?.label }}</span>
         </div>
 
-        <!-- Target info: "Φέρε 6 και πάνω" -->
+        <!-- Target info -->
         <div class="dice-target">
-          🎲 Φέρε <strong class="text-accent">{{ result.targetRoll }}</strong> και πάνω
+          Χρειάζεσαι
+          <strong class="text-accent">{{ result?.targetRoll }}+</strong>
+          για επιτυχία
         </div>
-        <!-- Visual scale 1-10 -->
-        <div class="dice-scale">
+
+        <!-- Pip scale (1-6) -->
+        <div class="pip-scale">
           <div
-            v-for="n in 10"
+            v-for="n in 6"
             :key="n"
-            class="scale-pip"
+            class="pip-box"
             :class="{
-              'pip-win': n >= result.targetRoll,
-              'pip-lose': n < result.targetRoll,
-              'pip-landed': phase === 'result' && n === result.roll,
+              'pip-win': n >= (result?.targetRoll ?? 7),
+              'pip-lose': n < (result?.targetRoll ?? 7),
+              'pip-landed': phase === 'result' && n === result?.roll,
             }"
-          >
-            {{ n }}
-          </div>
+          >{{ n }}</div>
         </div>
 
-        <!-- Dice display -->
-        <div class="dice-display">
+        <!-- 3D Die -->
+        <div class="die-scene">
           <div
-            class="dice-number"
+            class="die"
             :class="{
-              spinning: phase === 'spinning',
-              landed: phase === 'result',
-              'result-success': phase === 'result' && result.success,
-              'result-fail': phase === 'result' && !result.success,
+              'die-rolling': phase === 'rolling',
+              'die-success': phase === 'result' && result?.success,
+              'die-fail': phase === 'result' && !result?.success,
             }"
           >
-            {{ displayNumber }}
+            <div
+              v-for="(dot, i) in DOT_POSITIONS[displayFace]"
+              :key="i"
+              class="dot"
+              :style="{ left: dot[0] + '%', top: dot[1] + '%' }"
+            />
           </div>
         </div>
 
-        <!-- Result text -->
+        <!-- Stop button -->
+        <div v-if="phase === 'rolling'" class="stop-area">
+          <button class="btn-stop" @click="stopDie">
+            <span class="stop-icon">✋</span>
+            <span>Σταμάτα!</span>
+          </button>
+          <p class="stop-hint">Πάτα για να σταματήσεις το ζάρι</p>
+        </div>
+
+        <!-- Result -->
         <transition name="slide-up">
           <div v-if="phase === 'result'" class="dice-result">
-            <div class="result-badge" :class="result.success ? 'badge-success' : 'badge-danger'">
-              {{ result.success ? 'Επιτυχία!' : 'Αποτυχία!' }}
+            <div class="result-badge" :class="result?.success ? 'badge-success' : 'badge-danger'">
+              {{ result?.success ? 'Επιτυχία!' : 'Αποτυχία!' }}
             </div>
 
-            <!-- Rewards -->
-            <div v-if="result.success && result.rewards" class="dice-rewards">
+            <div v-if="result?.success && rewardLines.length" class="dice-rewards">
               <div v-for="(reward, i) in rewardLines" :key="i" class="reward-line">
                 <span class="reward-icon">{{ reward.icon }}</span>
                 <span>{{ reward.text }}</span>
               </div>
             </div>
 
-            <!-- Failure consequence -->
-            <div v-if="!result.success && result.consequence" class="dice-consequence">
-              <span>{{ result.consequence }}</span>
+            <div v-if="!result?.success && result?.consequence" class="dice-consequence">
+              {{ result.consequence }}
             </div>
 
             <button class="btn btn-primary mt-sm" @click="dismiss">Συνέχεια</button>
@@ -74,73 +86,63 @@
 <script setup>
 import { ref, computed, watch, onBeforeUnmount } from 'vue'
 
+// Dot positions [x%, y%] from top-left for each die face (1-6)
+const DOT_POSITIONS = {
+  1: [[50, 50]],
+  2: [[30, 28], [70, 72]],
+  3: [[30, 28], [50, 50], [70, 72]],
+  4: [[30, 28], [70, 28], [30, 72], [70, 72]],
+  5: [[30, 28], [70, 28], [50, 50], [30, 72], [70, 72]],
+  6: [[30, 24], [70, 24], [30, 50], [70, 50], [30, 76], [70, 76]],
+}
+
 const props = defineProps({
-  result: {
-    type: Object,
-    default: null,
-    // Expected: { success, roll (1-10), targetRoll (1-10), label, icon, rewards, consequence }
-  },
-  visible: {
-    type: Boolean,
-    default: false,
-  },
+  result: { type: Object, default: null },
+  visible: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['dismiss'])
 
-const phase = ref('idle') // 'idle' | 'spinning' | 'result'
-const displayNumber = ref(1)
+const phase = ref('idle')   // 'idle' | 'rolling' | 'result'
+const displayFace = ref(1)
 let spinInterval = null
-let spinTimeout = null
 
 const rewardLines = computed(() => {
   if (!props.result?.rewards) return []
   const r = props.result.rewards
   const lines = []
-  if (r.cash) lines.push({ icon: '💰', text: `+€${r.cash.toLocaleString('el-GR')}` })
-  if (r.xp) lines.push({ icon: '⭐', text: `+${r.xp} XP` })
+  if (r.cash)    lines.push({ icon: '💰', text: `+€${r.cash.toLocaleString('el-GR')}` })
+  if (r.xp)     lines.push({ icon: '⭐', text: `+${r.xp} XP` })
   if (r.crimeXP) lines.push({ icon: '🎭', text: `+${r.crimeXP} Crime XP` })
   if (r.statGain) lines.push({ icon: '💪', text: `+${r.statGain.toFixed(2)} ${r.statName || ''}` })
   if (r.filotimo) lines.push({ icon: '⚖️', text: `${r.filotimo > 0 ? '+' : ''}${r.filotimo} Φιλότιμο` })
-  if (r.items && r.items.length) {
-    for (const item of r.items) {
-      lines.push({ icon: '📦', text: item })
-    }
+  if (r.items?.length) {
+    for (const item of r.items) lines.push({ icon: '📦', text: item })
   }
   return lines
 })
 
 watch(() => props.visible, (val) => {
   if (val && props.result) {
-    startAnimation()
+    startRolling()
   } else {
     cleanup()
     phase.value = 'idle'
   }
 })
 
-function startAnimation() {
-  phase.value = 'spinning'
-  displayNumber.value = Math.floor(Math.random() * 10) + 1
-
+function startRolling() {
+  phase.value = 'rolling'
+  displayFace.value = Math.floor(Math.random() * 6) + 1
   spinInterval = setInterval(() => {
-    displayNumber.value = Math.floor(Math.random() * 10) + 1
+    displayFace.value = Math.floor(Math.random() * 6) + 1
   }, 80)
-
-  spinTimeout = setTimeout(() => {
-    clearInterval(spinInterval)
-    spinInterval = null
-    displayNumber.value = props.result.roll
-    phase.value = 'result'
-  }, 2000)
 }
 
-function skipAnimation() {
-  if (phase.value === 'spinning') {
-    cleanup()
-    displayNumber.value = props.result.roll
-    phase.value = 'result'
-  }
+function stopDie() {
+  cleanup()
+  displayFace.value = props.result.roll
+  phase.value = 'result'
 }
 
 function dismiss() {
@@ -154,10 +156,6 @@ function cleanup() {
     clearInterval(spinInterval)
     spinInterval = null
   }
-  if (spinTimeout) {
-    clearTimeout(spinTimeout)
-    spinTimeout = null
-  }
 }
 
 onBeforeUnmount(cleanup)
@@ -167,7 +165,7 @@ onBeforeUnmount(cleanup)
 .dice-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0, 0, 0, 0.82);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -180,9 +178,13 @@ onBeforeUnmount(cleanup)
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-lg);
   padding: var(--space-lg);
-  max-width: 360px;
+  max-width: 340px;
   width: 100%;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
 }
 
 .dice-header {
@@ -192,125 +194,158 @@ onBeforeUnmount(cleanup)
   gap: var(--space-xs);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
-  margin-bottom: var(--space-sm);
 }
 
 .dice-target {
   font-size: var(--font-size-md);
   color: var(--text-secondary);
-  margin-bottom: var(--space-sm);
 }
 
-/* Visual scale 1-10 */
-.dice-scale {
+/* Pip scale */
+.pip-scale {
   display: flex;
-  gap: 2px;
+  gap: 6px;
   justify-content: center;
-  margin-bottom: var(--space-md);
 }
 
-.scale-pip {
-  width: 28px;
-  height: 28px;
+.pip-box {
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);
   font-family: var(--font-family-mono);
-  border-radius: 4px;
+  border-radius: var(--border-radius-sm);
   transition: all 0.3s;
 }
 
-.scale-pip.pip-lose {
+.pip-box.pip-lose {
   background: rgba(231, 76, 60, 0.2);
   color: var(--color-danger);
+  border: 1px solid rgba(231, 76, 60, 0.3);
 }
 
-.scale-pip.pip-win {
+.pip-box.pip-win {
   background: rgba(46, 204, 113, 0.2);
   color: var(--color-success);
+  border: 1px solid rgba(46, 204, 113, 0.3);
 }
 
-.scale-pip.pip-landed {
+.pip-box.pip-landed {
   outline: 2px solid var(--text-primary);
-  transform: scale(1.15);
+  transform: scale(1.2);
 }
 
-.dice-display {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: var(--space-md);
+/* Die */
+.die-scene {
+  perspective: 500px;
 }
 
-.dice-number {
-  width: 100px;
-  height: 100px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 3rem;
-  font-weight: var(--font-weight-bold);
-  font-family: var(--font-family-mono);
-  border-radius: var(--border-radius-lg);
-  border: 3px solid var(--border-color);
-  background: var(--bg-surface-raised);
-  color: var(--text-primary);
-  transition: all 0.3s;
+.die {
+  width: 120px;
+  height: 120px;
+  position: relative;
+  background: #1c1c2e;
+  border: 3px solid #4a4a6a;
+  border-radius: 20px;
+  box-shadow:
+    inset 0 2px 6px rgba(255,255,255,0.08),
+    4px 6px 0 #0d0d1a,
+    0 12px 24px rgba(0,0,0,0.6);
+  transition: border-color 0.4s, box-shadow 0.4s;
+  margin: 0 auto;
 }
 
-.dice-number.spinning {
-  animation: diceSpin 0.15s infinite;
-  border-color: var(--color-accent);
-  box-shadow: 0 0 20px rgba(13, 94, 175, 0.4);
+.die.die-rolling {
+  animation: dieWobble 0.25s infinite;
+  border-color: #5a5a8a;
 }
 
-.dice-number.landed.result-success {
+.die.die-success {
   border-color: var(--color-success);
-  color: var(--color-success);
-  box-shadow: 0 0 30px rgba(46, 204, 113, 0.4);
-  animation: successPulse 0.6s ease;
+  box-shadow:
+    4px 6px 0 #0d0d1a,
+    0 0 30px rgba(46, 204, 113, 0.5);
+  animation: successPop 0.5s ease;
 }
 
-.dice-number.landed.result-fail {
+.die.die-fail {
   border-color: var(--color-danger);
-  color: var(--color-danger);
-  box-shadow: 0 0 30px rgba(231, 76, 60, 0.4);
+  box-shadow:
+    4px 6px 0 #0d0d1a,
+    0 0 30px rgba(231, 76, 60, 0.5);
   animation: failShake 0.5s ease;
 }
 
-@keyframes diceSpin {
-  0% { transform: scale(1) rotate(0deg); }
-  50% { transform: scale(1.05) rotate(3deg); }
-  100% { transform: scale(1) rotate(-3deg); }
+.dot {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: #e8e8ff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
 }
 
-@keyframes successPulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.15); }
-  100% { transform: scale(1); }
+/* Stop button */
+.stop-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
 }
 
-@keyframes failShake {
-  0%, 100% { transform: translateX(0); }
-  20% { transform: translateX(-8px); }
-  40% { transform: translateX(8px); }
-  60% { transform: translateX(-6px); }
-  80% { transform: translateX(6px); }
+.btn-stop {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-xl);
+  background: var(--color-danger);
+  color: #fff;
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+  animation: stopPulse 1s infinite;
 }
 
+.btn-stop:hover {
+  background: #c0392b;
+  transform: scale(1.05);
+}
+
+.btn-stop:active {
+  transform: scale(0.97);
+}
+
+.stop-icon {
+  font-size: 1.4em;
+}
+
+.stop-hint {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Result section */
 .dice-result {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-sm);
+  width: 100%;
 }
 
 .result-badge {
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
-  padding: var(--space-xs) var(--space-md);
+  padding: var(--space-xs) var(--space-lg);
   border-radius: var(--border-radius-md);
 }
 
@@ -354,11 +389,40 @@ onBeforeUnmount(cleanup)
   width: 100%;
 }
 
+/* Animations */
+@keyframes dieWobble {
+  0%   { transform: rotate(-6deg) scale(1.03); }
+  25%  { transform: rotate(5deg)  scale(0.98); }
+  50%  { transform: rotate(-4deg) scale(1.02); }
+  75%  { transform: rotate(6deg)  scale(0.97); }
+  100% { transform: rotate(-6deg) scale(1.03); }
+}
+
+@keyframes stopPulse {
+  0%, 100% { box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4); }
+  50%       { box-shadow: 0 4px 20px rgba(231, 76, 60, 0.7); }
+}
+
+@keyframes successPop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.18); }
+  70%  { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+@keyframes failShake {
+  0%, 100% { transform: translateX(0); }
+  20%  { transform: translateX(-10px); }
+  40%  { transform: translateX(10px); }
+  60%  { transform: translateX(-7px); }
+  80%  { transform: translateX(7px); }
+}
+
 /* Transitions */
 .fade-enter-active { transition: opacity 0.2s; }
 .fade-leave-active { transition: opacity 0.15s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 
-.slide-up-enter-active { transition: all 0.4s ease; }
-.slide-up-enter-from { opacity: 0; transform: translateY(16px); }
+.slide-up-enter-active { transition: all 0.35s ease; }
+.slide-up-enter-from   { opacity: 0; transform: translateY(14px); }
 </style>

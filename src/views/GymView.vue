@@ -56,6 +56,20 @@
       <p class="text-mono text-accent">{{ formatTime(player.activityTimeRemaining) }}</p>
     </div>
 
+    <!-- Pending result — player must roll the dice -->
+    <div v-else-if="player.pendingResult && player.pendingResult.type === 'gym'" class="card roll-prompt-card">
+      <div class="roll-prompt-header">
+        <span style="font-size: 28px">{{ player.pendingResult.icon }}</span>
+        <div>
+          <strong>{{ player.pendingResult.label }}</strong>
+          <p class="text-muted" style="font-size: var(--font-size-xs)">Η προπόνηση τελείωσε — ρίξε το ζάρι!</p>
+        </div>
+      </div>
+      <button class="btn-roll-dice" @click="openDice">
+        🎲 Ρίξε το Ζάρι!
+      </button>
+    </div>
+
     <!-- Stat tabs -->
     <div v-if="!player.activeActivity" class="stat-tabs">
       <button
@@ -107,7 +121,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { usePlayerStore } from '../stores/playerStore'
 import { useGameStore } from '../stores/gameStore'
 import { getAvailableGym, getNextGym } from '../data/gyms'
@@ -160,8 +174,8 @@ function startExercise(ex) {
   )
   const gain = baseGain * ex.multiplier * travelStore.gymBoostMultiplier
 
-  // Gym always succeeds — show a high d10 roll for fun
-  const roll = 7 + Math.floor(Math.random() * 4) // 7-10
+  // Gym always succeeds — show a high d6 roll (5 or 6) for fun
+  const roll = 5 + Math.floor(Math.random() * 2) // 5 or 6
 
   const statLabel = statDefs.find(s => s.key === selectedStat.value)?.label || selectedStat.value
 
@@ -174,7 +188,7 @@ function startExercise(ex) {
     preRolled: {
       success: true,
       roll,
-      targetRoll: 1, // gym always succeeds (need ≥1)
+      targetRoll: 1, // gym always succeeds (need ≥1 on d6)
       rewards: {
         statGain: gain,
         statName: statLabel,
@@ -186,23 +200,24 @@ function startExercise(ex) {
   gameStore.saveGame()
 }
 
-// Watch for pending result (activity completed)
-watch(() => player.pendingResult, (result) => {
-  if (result && result.type === 'gym') {
-    diceResult.value = {
-      success: true,
-      roll: result.roll,
-      targetRoll: result.targetRoll,
-      label: result.label,
-      icon: result.icon,
-      rewards: {
-        statGain: result.rewards.statGain,
-        statName: result.rewards.statName,
-      },
-    }
-    showDice.value = true
+// Player manually opens dice after training completes
+function openDice() {
+  const result = player.pendingResult
+  if (!result || result.type !== 'gym') return
+
+  diceResult.value = {
+    success: true,
+    roll: result.roll,
+    targetRoll: result.targetRoll,
+    label: result.label,
+    icon: result.icon,
+    rewards: {
+      statGain: result.rewards.statGain,
+      statName: result.rewards.statName,
+    },
   }
-}, { immediate: true })
+  showDice.value = true
+}
 
 function onDiceDismiss() {
   showDice.value = false
@@ -393,6 +408,45 @@ function formatDuration(ms) {
   transform: translateY(-50%);
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
+}
+
+/* Roll dice prompt */
+.roll-prompt-card {
+  border-left: 3px solid var(--color-success);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.roll-prompt-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.btn-roll-dice {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-success);
+  color: #fff;
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: 0 4px 12px rgba(46, 204, 113, 0.35);
+  animation: rollPromptPulse 1.2s infinite;
+}
+
+.btn-roll-dice:hover {
+  background: #27ae60;
+  transform: scale(1.02);
+}
+
+@keyframes rollPromptPulse {
+  0%, 100% { box-shadow: 0 4px 12px rgba(46, 204, 113, 0.35); }
+  50%       { box-shadow: 0 4px 22px rgba(46, 204, 113, 0.65); }
 }
 
 /* Activity in progress */
