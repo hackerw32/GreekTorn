@@ -2,23 +2,44 @@ export const crimes = [
   {
     id: 'shoplifting',
     name: 'Κλοπή από Περίπτερο',
-    description: 'Αρπάζεις ό,τι βρεις από ένα περίπτερο στη γωνία.',
+    description: 'Μπαίνεις σε ένα περίπτερο. Τι κλέβεις;',
     nerveCost: 2,
-    baseSuccessRate: 0.80,
     relevantStat: 'dexterity',
     statWeight: 0.3,
     expWeight: 0.7,
-    rewards: { cashMin: 5, cashMax: 30, crimeXP: 1, xp: 2 },
-    failure: { jailTimeMin: 60000, jailTimeMax: 180000, jailChance: 0.4 },
-    possibleItemDrops: [
-      { itemId: 'cigarettes', chance: 0.08 },
-      { itemId: 'lighter', chance: 0.05 },
-    ],
+    failure: { jailTimeMin: 60000, jailTimeMax: 180000 },
     filotimoChange: -1,
     requiredCrimeXP: 0,
     tier: 1,
     icon: '🏪',
     duration: 60000,
+    // Two variants — player chooses before starting
+    variants: [
+      {
+        id: 'item',
+        label: 'Αντικείμενο',
+        description: 'Αρπάζεις γρήγορα κάτι από τα ράφια. Εύκολο — αρκεί 2+ στο ζάρι.',
+        baseSuccessRate: 0.833, // d6 target = 2 (need 2,3,4,5,6)
+        rewards: { cashMin: 0, cashMax: 0, crimeXP: 1, xp: 2 },
+        // Guaranteed random item from kiosk pool on success
+        guaranteedItemPool: [
+          'chocolate', 'water_bottle', 'soda_can', 'beer_can',
+          'toast_bag', 'chewing_gum', 'cigarettes', 'lighter',
+        ],
+        possibleItemDrops: [],
+        jailChance: 0.3,
+      },
+      {
+        id: 'cash',
+        label: 'Λεφτά',
+        description: 'Αποσπάς την προσοχή του και αδειάζεις το ταμείο. Δυσκολότερο — χρειάζεσαι 4+ στο ζάρι.',
+        baseSuccessRate: 0.50, // d6 target = 4 (need 4,5,6)
+        rewards: { cashMin: 5, cashMax: 30, crimeXP: 1, xp: 2 },
+        guaranteedItemPool: null,
+        possibleItemDrops: [],
+        jailChance: 0.5,
+      },
+    ],
   },
   {
     id: 'pickpocketing',

@@ -24,11 +24,12 @@ export const useCrimeStore = defineStore('crime', {
     },
 
     getCrimeSuccessRate() {
-      return (crimeId) => {
+      return (crimeId, variantId = null) => {
         const crime = getCrimeById(crimeId)
         if (!crime) return 0
         const player = usePlayerStore()
-        return calculateCrimeSuccess(crime, player.stats, player.crimeXP, player.filotimo)
+        const effective = resolveVariant(crime, variantId)
+        return calculateCrimeSuccess(effective, player.stats, player.crimeXP, player.filotimo)
       }
     },
   },
@@ -36,11 +37,19 @@ export const useCrimeStore = defineStore('crime', {
   actions: {
     /**
      * Start a crime — deducts nerve, pre-rolls result, starts activity timer.
+     * variantId: for crimes with variants (e.g. shoplifting 'item' or 'cash')
      * Returns { started: true } or { started: false, message }
      */
-    startCrime(crimeId) {
+    startCrime(crimeId, variantId = null) {
       const crime = getCrimeById(crimeId)
       if (!crime) return { started: false, message: 'Άγνωστο έγκλημα' }
+
+      // If crime has variants, a variantId is required
+      if (crime.variants && !variantId) {
+        return { started: false, message: 'Διάλεξε τρόπο εκτέλεσης.' }
+      }
+
+      const effective = resolveVariant(crime, variantId)
 
       const player = usePlayerStore()
 
@@ -62,16 +71,25 @@ export const useCrimeStore = defineStore('crime', {
       this.crimeAttempts[crimeId].total++
 
       // Pre-roll result at start (prevents save-scumming)
-      const successRate = calculateCrimeSuccess(crime, player.stats, player.crimeXP, player.filotimo)
+      const successRate = calculateCrimeSuccess(effective, player.stats, player.crimeXP, player.filotimo)
       const { roll, targetRoll, success: succeeded } = rollD6(successRate)
 
-      const preRolled = { success: succeeded, roll, targetRoll, successRate }
+      const preRolled = { success: succeeded, roll, targetRoll, successRate, variantId }
 
       if (succeeded) {
-        const reward = calculateCrimeReward(crime)
+        const reward = calculateCrimeReward(effective)
         const travelStore = useTravelStore()
         const locationCash = Math.floor(reward.cash * travelStore.crimeRewardMultiplier)
-        const droppedItemId = rollItemDrop(crime.possibleItemDrops)
+
+        // Guaranteed item pool (e.g. shoplifting 'item' variant) or random drop
+        let droppedItemId = null
+        if (effective.guaranteedItemPool?.length) {
+          const pool = effective.guaranteedItemPool
+          droppedItemId = pool[Math.floor(Math.random() * pool.length)]
+        } else {
+          droppedItemId = rollItemDrop(effective.possibleItemDrops)
+        }
+
         preRolled.rewards = {
           cash: locationCash,
           crimeXP: reward.crimeXP,
@@ -80,18 +98,23 @@ export const useCrimeStore = defineStore('crime', {
           droppedItemId,
         }
       } else {
-        const goToJail = Math.random() < crime.failure.jailChance
+        const jailChance = effective.jailChance ?? crime.failure.jailChance
+        const goToJail = Math.random() < jailChance
         preRolled.jailed = goToJail
         if (goToJail) {
           preRolled.jailTime = calculateJailTime(crime)
         }
       }
 
+      // Build label — for variant crimes include the variant label
+      const variant = variantId && crime.variants ? crime.variants.find(v => v.id === variantId) : null
+      const label = variant ? `${crime.name} — ${variant.label}` : crime.name
+
       // Start activity timer
       player.startActivity({
         type: 'crime',
         id: crimeId,
-        label: crime.name,
+        label,
         icon: crime.icon,
         duration: crime.duration,
         preRolled,
@@ -114,7 +137,9 @@ export const useCrimeStore = defineStore('crime', {
 
       if (result.success) {
         const r = result.rewards
-        this.crimeAttempts[result.id].successes++
+        if (this.crimeAttempts[result.id]) {
+          this.crimeAttempts[result.id].successes++
+        }
         player.addCash(r.cash)
         player.addCrimeXP(r.crimeXP)
         player.addXP(r.xp)
@@ -123,20 +148,26 @@ export const useCrimeStore = defineStore('crime', {
         if (r.droppedItemId) {
           const inventoryStore = useInventoryStore()
           inventoryStore.addItem(r.droppedItemId, 1)
+          const item = getItemById(r.droppedItemId)
+          const itemName = item ? item.name : r.droppedItemId
+          player.logActivity(`${result.icon} ${result.label}: ${itemName}`, 'crime')
+          gameStore.addNotification(`${result.label}: ${itemName}!`, 'success')
+        } else {
+          player.logActivity(`${result.icon} ${result.label}: +€${r.cash}`, 'crime')
+          if (r.cash > 0) {
+            gameStore.addNotification(`${result.label}: +€${r.cash}`, 'success')
+          } else {
+            gameStore.addNotification(`${result.label}: Επιτυχία!`, 'success')
+          }
         }
-
-        const label = crime ? crime.name : 'Έγκλημα'
-        player.logActivity(`${result.icon} ${label}: +€${r.cash}`, 'crime')
-        gameStore.addNotification(`${label}: +€${r.cash}`, 'success')
       } else {
-        const label = crime ? crime.name : 'Έγκλημα'
         if (result.jailed) {
           player.setStatus('jail', result.jailTime)
-          player.logActivity(`${result.icon} ${label}: Αποτυχία — Φυλακή!`, 'jail')
+          player.logActivity(`${result.icon} ${result.label}: Αποτυχία — Φυλακή!`, 'jail')
           gameStore.addNotification(`Σε έπιασαν! Φυλακή για ${formatTime(result.jailTime)}`, 'jail')
         } else {
-          player.logActivity(`${result.icon} ${label}: Αποτυχία`, 'danger')
-          gameStore.addNotification(`${label}: Αποτυχία!`, 'danger')
+          player.logActivity(`${result.icon} ${result.label}: Αποτυχία`, 'danger')
+          gameStore.addNotification(`${result.label}: Αποτυχία!`, 'danger')
         }
       }
 
@@ -155,6 +186,14 @@ export const useCrimeStore = defineStore('crime', {
     },
   }
 })
+
+/** Merge a crime with a specific variant's overrides */
+function resolveVariant(crime, variantId) {
+  if (!variantId || !crime.variants) return crime
+  const variant = crime.variants.find(v => v.id === variantId)
+  if (!variant) return crime
+  return { ...crime, ...variant }
+}
 
 function formatTime(ms) {
   const totalSec = Math.ceil(ms / 1000)

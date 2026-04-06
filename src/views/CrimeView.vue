@@ -46,13 +46,13 @@
     </div>
 
     <!-- Available crimes -->
-    <div v-if="!player.activeActivity" class="crime-list">
+    <div v-if="!player.activeActivity && !player.pendingResult" class="crime-list">
       <div
         v-for="crime in crimeStore.availableCrimes"
         :key="crime.id"
         class="card crime-card"
-        :class="{ disabled: !canDoCrime(crime) }"
-        @click="doCrime(crime)"
+        :class="{ disabled: !canDoCrime(crime), 'has-variants': crime.variants }"
+        @click="!crime.variants && doCrime(crime)"
       >
         <div class="crime-header">
           <span class="crime-icon">{{ crime.icon }}</span>
@@ -61,7 +61,9 @@
             <p class="crime-desc text-muted">{{ crime.description }}</p>
           </div>
         </div>
-        <div class="crime-stats">
+
+        <!-- Normal crime stats (no variants) -->
+        <div v-if="!crime.variants" class="crime-stats">
           <span class="badge badge-purple">{{ crime.nerveCost }} Θράσος</span>
           <span class="badge" :class="successBadgeClass(crime)">
             {{ Math.floor(crimeStore.getCrimeSuccessRate(crime.id) * 100) }}%
@@ -71,11 +73,37 @@
           </span>
           <span class="badge badge-muted">{{ formatDuration(crime.duration) }}</span>
         </div>
+
+        <!-- Variant crime: two option buttons -->
+        <div v-else class="variant-section">
+          <div class="variant-meta">
+            <span class="badge badge-purple">{{ crime.nerveCost }} Θράσος</span>
+            <span class="badge badge-muted">{{ formatDuration(crime.duration) }}</span>
+          </div>
+          <div class="variant-buttons">
+            <button
+              v-for="v in crime.variants"
+              :key="v.id"
+              class="btn-variant"
+              :class="{ 'variant-disabled': !canDoCrime(crime) }"
+              @click.stop="doCrime(crime, v.id)"
+              :disabled="!canDoCrime(crime)"
+            >
+              <div class="variant-top">
+                <span class="variant-label">{{ v.label }}</span>
+                <span class="badge" :class="variantBadgeClass(crime, v)">
+                  {{ Math.floor(crimeStore.getCrimeSuccessRate(crime.id, v.id) * 100) }}%
+                </span>
+              </div>
+              <p class="variant-desc">{{ v.description }}</p>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
     <!-- Locked crimes -->
-    <div v-if="crimeStore.lockedCrimes.length > 0 && !player.activeActivity" class="locked-section">
+    <div v-if="crimeStore.lockedCrimes.length > 0 && !player.activeActivity && !player.pendingResult" class="locked-section">
       <h3 class="text-muted mt-lg mb-sm">🔒 Κλειδωμένα</h3>
       <div class="crime-list">
         <div
@@ -133,9 +161,16 @@ function successBadgeClass(crime) {
   return 'badge-danger'
 }
 
-function doCrime(crime) {
+function variantBadgeClass(crime, variant) {
+  const rate = crimeStore.getCrimeSuccessRate(crime.id, variant.id)
+  if (rate >= 0.7) return 'badge-success'
+  if (rate >= 0.4) return 'badge-warning'
+  return 'badge-danger'
+}
+
+function doCrime(crime, variantId = null) {
   if (!canDoCrime(crime)) return
-  const result = crimeStore.startCrime(crime.id)
+  const result = crimeStore.startCrime(crime.id, variantId)
   if (!result.started) {
     gameStore.addNotification(result.message, 'danger')
   }
@@ -258,6 +293,70 @@ function formatDuration(ms) {
 .crime-card.locked {
   opacity: 0.4;
   cursor: default;
+}
+
+.crime-card.has-variants {
+  cursor: default;
+}
+
+/* Variant section */
+.variant-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.variant-meta {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.variant-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+}
+
+.btn-variant {
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: var(--space-sm);
+  cursor: pointer;
+  text-align: left;
+  transition: all var(--transition-fast);
+  color: var(--text-primary);
+}
+
+.btn-variant:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  background: var(--bg-base);
+}
+
+.btn-variant:disabled,
+.btn-variant.variant-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.variant-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.variant-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.variant-desc {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.4;
 }
 
 .crime-header {

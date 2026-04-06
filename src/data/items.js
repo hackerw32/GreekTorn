@@ -31,6 +31,14 @@ export const items = [
   { id: 'cocaine', name: 'Κοκαΐνη', type: 'drug', rarity: 'rare', happinessBoost: 80, energyBoost: 30, buyPrice: 500, sellPrice: 250, description: 'Κοκαΐνη. Τεράστιο boost σε κέφι και ενέργεια.', levelRequired: 8, icon: '❄️' },
   { id: 'steroids', name: 'Στεροειδή', type: 'drug', rarity: 'rare', happinessBoost: 20, strengthBoost: 2, buyPrice: 300, sellPrice: 150, description: 'Αναβολικά στεροειδή. Προσωρινό +2 δύναμη.', levelRequired: 5, icon: '💪' },
 
+  // === KIOSK ITEMS (stolen from a περίπτερο) ===
+  { id: 'chocolate', name: 'Σοκολάτα', type: 'misc', rarity: 'common', buyPrice: 0, sellPrice: 3, description: 'Μια σοκολάτα από περίπτερο.', levelRequired: 1, icon: '🍫' },
+  { id: 'water_bottle', name: 'Νερό', type: 'misc', rarity: 'common', buyPrice: 0, sellPrice: 2, description: 'Ένα μπουκάλι νερό.', levelRequired: 1, icon: '💧' },
+  { id: 'soda_can', name: 'Αναψυκτικό', type: 'misc', rarity: 'common', buyPrice: 0, sellPrice: 3, description: 'Ένα κουτί αναψυκτικό.', levelRequired: 1, icon: '🥤' },
+  { id: 'beer_can', name: 'Μπύρα', type: 'drug', rarity: 'common', happinessBoost: 8, buyPrice: 0, sellPrice: 5, description: 'Μια κρύα μπύρα. Ανεβάζει κέφι.', levelRequired: 1, icon: '🍺' },
+  { id: 'toast_bag', name: 'Τοστ', type: 'misc', rarity: 'common', buyPrice: 0, sellPrice: 4, description: 'Ένα τοστ σε σελοφάν.', levelRequired: 1, icon: '🥪' },
+  { id: 'chewing_gum', name: 'Τσίχλα', type: 'misc', rarity: 'common', buyPrice: 0, sellPrice: 1, description: 'Ένα πακετάκι τσίχλες.', levelRequired: 1, icon: '🫧' },
+
   // === MISC / LOOT ===
   { id: 'lighter', name: 'Αναπτήρας', type: 'misc', rarity: 'common', buyPrice: 0, sellPrice: 5, description: 'Ένας φτηνός αναπτήρας.', levelRequired: 1, icon: '🔥' },
   { id: 'watch_cheap', name: 'Φτηνό Ρολόι', type: 'misc', rarity: 'common', buyPrice: 0, sellPrice: 30, description: 'Ένα ρολόι χεριού.', levelRequired: 1, icon: '⌚' },
