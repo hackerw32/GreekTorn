@@ -1,154 +1,75 @@
 <template>
   <div class="casino-page">
-    <h2 class="page-title">🎰 Καζίνο / Στοίχημα</h2>
+    <h2 class="page-title">🎲 Τυχερά Παιχνίδια</h2>
 
-    <!-- Casino stats -->
+    <!-- Stats bar -->
     <div class="card stats-row">
       <div class="stat-pair">
         <span class="text-muted">Παιχνίδια</span>
         <span class="text-mono">{{ casinoStore.stats.gamesPlayed }}</span>
       </div>
       <div class="stat-pair">
-        <span class="text-muted">Κέρδη / Ζημίες</span>
+        <span class="text-muted">Κέρδη/Ζημίες</span>
         <span class="text-mono" :class="casinoStore.netProfit >= 0 ? 'text-success' : 'text-danger'">
           {{ casinoStore.netProfit >= 0 ? '+' : '' }}€{{ casinoStore.netProfit.toLocaleString('el-GR') }}
         </span>
       </div>
-    </div>
-
-    <!-- Games -->
-    <div class="game-list">
-      <div v-for="game in casinoGames" :key="game.id" class="card game-card">
-        <div class="game-header">
-          <span class="game-icon">{{ game.icon }}</span>
-          <div class="game-info">
-            <strong>{{ game.name }}</strong>
-            <p class="text-muted game-desc">{{ game.description }}</p>
-          </div>
-        </div>
-
-        <div class="game-meta">
-          <span class="badge badge-info">x{{ game.payout }}</span>
-          <span class="badge badge-muted">{{ (game.winChance * 100).toFixed(0) }}% πιθ.</span>
-          <span class="text-muted" style="font-size: var(--font-size-xs)">
-            €{{ game.minBet }} - €{{ game.maxBet.toLocaleString('el-GR') }}
-          </span>
-        </div>
-
-        <!-- Bet controls -->
-        <div class="bet-controls mt-sm">
-          <div class="bet-input-row">
-            <button class="btn btn-sm btn-outline" @click="adjustBet(game.id, -100)">-100</button>
-            <button class="btn btn-sm btn-outline" @click="adjustBet(game.id, -10)">-10</button>
-            <input
-              type="number"
-              class="bet-input"
-              :min="game.minBet"
-              :max="game.maxBet"
-              v-model.number="bets[game.id]"
-            />
-            <button class="btn btn-sm btn-outline" @click="adjustBet(game.id, 10)">+10</button>
-            <button class="btn btn-sm btn-outline" @click="adjustBet(game.id, 100)">+100</button>
-          </div>
-
-          <!-- Number choice for special games -->
-          <div v-if="game.requiresChoice" class="choice-row mt-xs">
-            <span class="text-muted" style="font-size: var(--font-size-xs)">Αριθμός:</span>
-            <input
-              type="number"
-              class="choice-input"
-              :min="game.choiceRange[0]"
-              :max="game.choiceRange[1]"
-              v-model.number="choices[game.id]"
-            />
-          </div>
-
-          <button
-            class="btn btn-primary btn-block btn-sm mt-xs"
-            :disabled="!canPlay(game)"
-            @click="play(game)"
-          >
-            Παίξε €{{ (bets[game.id] || game.minBet).toLocaleString('el-GR') }}
-          </button>
-        </div>
+      <div class="stat-pair">
+        <span class="text-muted">Χρήματα</span>
+        <span class="text-mono text-accent">€{{ player.cash.toLocaleString('el-GR') }}</span>
       </div>
     </div>
 
-    <!-- Dice Roll Animation -->
-    <DiceRoll
-      :visible="showDice"
-      :result="diceResult"
-      @dismiss="onDiceDismiss"
-    />
+    <!-- Game selector tabs -->
+    <div class="game-tabs">
+      <button
+        v-for="game in games"
+        :key="game.id"
+        class="game-tab"
+        :class="{ active: activeGame === game.id }"
+        @click="activeGame = game.id"
+      >
+        <span class="tab-icon">{{ game.icon }}</span>
+        <span class="tab-label">{{ game.label }}</span>
+      </button>
+    </div>
+
+    <!-- Active game -->
+    <div class="game-area card">
+      <div class="game-title">
+        <span>{{ currentGame.icon }} {{ currentGame.label }}</span>
+        <span class="text-muted" style="font-size:var(--font-size-xs)">{{ currentGame.description }}</span>
+      </div>
+
+      <SlotsGame    v-if="activeGame === 'slots'"     />
+      <RouletteGame v-else-if="activeGame === 'roulette'" />
+      <BlackjackGame v-else-if="activeGame === 'blackjack'" />
+      <KenoGame     v-else-if="activeGame === 'keno'" />
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, computed } from 'vue'
 import { usePlayerStore } from '../stores/playerStore'
 import { useCasinoStore } from '../stores/casinoStore'
-import { useGameStore } from '../stores/gameStore'
-import { casinoGames } from '../data/casino'
-import DiceRoll from '../components/ui/DiceRoll.vue'
+import SlotsGame from '../components/casino/SlotsGame.vue'
+import RouletteGame from '../components/casino/RouletteGame.vue'
+import BlackjackGame from '../components/casino/BlackjackGame.vue'
+import KenoGame from '../components/casino/KenoGame.vue'
 
 const player = usePlayerStore()
 const casinoStore = useCasinoStore()
-const gameStore = useGameStore()
 
-const showDice = ref(false)
-const diceResult = ref(null)
+const games = [
+  { id: 'slots',     icon: '🎰', label: 'Φρουτάκια', description: '3 τροχοί — ταιριάξτε 3 ίδια σύμβολα στη μεσαία γραμμή' },
+  { id: 'roulette',  icon: '🎡', label: 'Ρουλέτα',   description: 'Ποντάρετε σε αριθμό, χρώμα ή μονό/ζυγό (0-36)' },
+  { id: 'blackjack', icon: '🃏', label: 'Black Jack', description: 'Φτάστε στο 21 χωρίς να ξεπεράσετε — κερδίστε τον dealer' },
+  { id: 'keno',      icon: '🎯', label: 'Κίνο',       description: 'Διαλέξτε 1-10 αριθμούς και κερδίστε όσο περισσότεροι βγουν' },
+]
 
-// Initialize bets and choices for each game
-const bets = reactive({})
-const choices = reactive({})
-for (const game of casinoGames) {
-  bets[game.id] = game.minBet
-  if (game.requiresChoice) {
-    choices[game.id] = game.choiceRange[0]
-  }
-}
-
-function adjustBet(gameId, delta) {
-  const game = casinoGames.find(g => g.id === gameId)
-  if (!game) return
-  const current = bets[gameId] || game.minBet
-  bets[gameId] = Math.min(game.maxBet, Math.max(game.minBet, current + delta))
-}
-
-function canPlay(game) {
-  const bet = bets[game.id] || game.minBet
-  return !player.isIncapacitated && player.cash >= bet && bet >= game.minBet
-}
-
-function play(game) {
-  if (!canPlay(game)) return
-
-  const bet = bets[game.id] || game.minBet
-  const choice = game.requiresChoice ? (choices[game.id] || game.choiceRange[0]) : null
-
-  const result = casinoStore.playGame(game.id, bet, choice)
-  if (!result.played) {
-    gameStore.addNotification(result.message, 'danger')
-    return
-  }
-
-  // Show dice animation
-  diceResult.value = {
-    success: result.success,
-    roll: result.roll,
-    targetRoll: result.targetRoll,
-    label: result.label,
-    icon: result.icon,
-    rewards: result.success ? { cash: result.winnings } : null,
-    consequence: result.success ? null : `Έχασες €${result.betAmount.toLocaleString('el-GR')}`,
-  }
-  showDice.value = true
-}
-
-function onDiceDismiss() {
-  showDice.value = false
-  diceResult.value = null
-}
+const activeGame = ref('slots')
+const currentGame = computed(() => games.find(g => g.id === activeGame.value))
 </script>
 
 <style scoped>
@@ -158,9 +79,7 @@ function onDiceDismiss() {
   gap: var(--space-md);
 }
 
-.page-title {
-  font-size: var(--font-size-2xl);
-}
+.page-title { font-size: var(--font-size-2xl); }
 
 .stats-row {
   display: flex;
@@ -175,119 +94,48 @@ function onDiceDismiss() {
   font-size: var(--font-size-sm);
 }
 
-.game-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-}
-
-.game-card {
-  transition: all var(--transition-fast);
-}
-
-.game-header {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-sm);
-  margin-bottom: var(--space-sm);
-}
-
-.game-icon {
-  font-size: 28px;
-  flex-shrink: 0;
-}
-
-.game-info {
-  flex: 1;
-}
-
-.game-info strong {
-  font-size: var(--font-size-sm);
-}
-
-.game-desc {
-  font-size: var(--font-size-xs);
-  line-height: 1.4;
-}
-
-.game-meta {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  flex-wrap: wrap;
-}
-
-.badge-muted {
-  background: var(--bg-surface-raised);
-  color: var(--text-secondary);
-  font-size: var(--font-size-xs);
-  padding: 2px 6px;
-  border-radius: var(--border-radius-sm);
-}
-
-.bet-controls {
-  border-top: 1px solid var(--border-color);
-  padding-top: var(--space-sm);
-}
-
-.bet-input-row {
-  display: flex;
-  align-items: center;
+/* Game tabs */
+.game-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--space-xs);
 }
 
-.bet-input {
-  flex: 1;
-  text-align: center;
-  background: var(--bg-surface-raised);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  color: var(--text-primary);
-  font-family: var(--font-family-mono);
-  font-size: var(--font-size-sm);
-  padding: var(--space-xs);
-  min-width: 0;
-}
-
-.bet-input:focus {
-  outline: none;
-  border-color: var(--color-accent);
-}
-
-.choice-row {
+.game-tab {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: var(--space-sm);
-}
-
-.choice-input {
-  width: 60px;
-  text-align: center;
-  background: var(--bg-surface-raised);
+  gap: 2px;
+  padding: var(--space-sm) var(--space-xs);
+  background: var(--bg-surface);
   border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  color: var(--text-primary);
-  font-family: var(--font-family-mono);
-  font-size: var(--font-size-sm);
-  padding: var(--space-xs);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  color: var(--text-secondary);
 }
 
-.choice-input:focus {
-  outline: none;
+.game-tab:hover { background: var(--bg-surface-raised); }
+
+.game-tab.active {
   border-color: var(--color-accent);
+  background: var(--bg-surface-raised);
+  color: var(--text-primary);
 }
 
-/* Remove spinner from number inputs */
-.bet-input::-webkit-inner-spin-button,
-.bet-input::-webkit-outer-spin-button,
-.choice-input::-webkit-inner-spin-button,
-.choice-input::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
+.tab-icon { font-size: 22px; }
+.tab-label { font-size: 10px; font-weight: var(--font-weight-medium); white-space: nowrap; }
 
-.bet-input[type="number"],
-.choice-input[type="number"] {
-  -moz-appearance: textfield;
+/* Game area */
+.game-area { display: flex; flex-direction: column; gap: var(--space-md); }
+
+.game-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--border-color);
 }
 </style>

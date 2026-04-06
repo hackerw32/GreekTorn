@@ -72,7 +72,7 @@ const mainItems = [
 const extraItems = [
   { to: '/travel', icon: '✈️', label: 'Ταξίδι' },
   { to: '/education', icon: '🎓', label: 'Εκπαίδευση' },
-  { to: '/casino', icon: '🎰', label: 'Καζίνο' },
+  { to: '/casino', icon: '🎲', label: 'Τυχερά' },
   { to: '/stocks', icon: '📈', label: 'Χρηματιστήριο' },
   { to: '/job', icon: '💼', label: 'Δουλειά' },
   { to: '/property', icon: '🏘️', label: 'Ακίνητα' },
