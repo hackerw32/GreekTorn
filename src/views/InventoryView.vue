@@ -42,7 +42,7 @@
     </div>
 
     <!-- Inventory items -->
-    <div v-else class="item-list">
+    <div class="item-list">
       <div v-if="filteredItems.length === 0" class="text-muted text-center mt-lg">
         Δεν έχεις αντικείμενα σε αυτή την κατηγορία.
       </div>
