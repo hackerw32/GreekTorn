@@ -14,6 +14,9 @@ import { useDailyRewardStore } from './dailyRewardStore'
 import { useAchievementStore } from './achievementStore'
 import { useMissionStore } from './missionStore'
 import { useFactionStore } from './factionStore'
+import { useBazaarStore } from './bazaarStore'
+import { useCompanyStore } from './companyStore'
+import { useBountyStore } from './bountyStore'
 
 let toastId = 0
 
@@ -80,6 +83,9 @@ export const useGameStore = defineStore('game', {
             achievement: useAchievementStore().getSerializable(),
             mission: useMissionStore().getSerializable(),
             faction: useFactionStore().getSerializable(),
+            bazaar: useBazaarStore().getSerializable(),
+            company: useCompanyStore().getSerializable(),
+            bounty: useBountyStore().getSerializable(),
           }
         }
 
@@ -163,6 +169,18 @@ export const useGameStore = defineStore('game', {
         const factionStore = useFactionStore()
         if (saveData.stores.faction) {
           factionStore.hydrate(saveData.stores.faction)
+        }
+        const bazaarStore = useBazaarStore()
+        if (saveData.stores.bazaar) {
+          bazaarStore.hydrate(saveData.stores.bazaar)
+        }
+        const companyStore = useCompanyStore()
+        if (saveData.stores.company) {
+          companyStore.hydrate(saveData.stores.company)
+        }
+        const bountyStore = useBountyStore()
+        if (saveData.stores.bounty) {
+          bountyStore.hydrate(saveData.stores.bounty)
         }
 
         // Calculate offline progress

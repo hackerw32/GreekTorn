@@ -65,10 +65,10 @@
                 </div>
               </div>
               <div class="opp-stats">
-                <span class="opp-stat" title="Strength">STR {{ npc.stats.strength }}</span>
-                <span class="opp-stat" title="Speed">SPD {{ npc.stats.speed }}</span>
-                <span class="opp-stat" title="Dexterity">DEX {{ npc.stats.dexterity }}</span>
-                <span class="opp-stat" title="Defense">DEF {{ npc.stats.defense }}</span>
+                <span class="opp-stat" title="Strength">STR {{ Math.round(npc.stats.strength) }}</span>
+                <span class="opp-stat" title="Speed">SPD {{ Math.round(npc.stats.speed) }}</span>
+                <span class="opp-stat" title="Dexterity">DEX {{ Math.round(npc.stats.dexterity) }}</span>
+                <span class="opp-stat" title="Defense">DEF {{ Math.round(npc.stats.defense) }}</span>
                 <span class="opp-stat opp-hp" title="HP">HP {{ npc.hp }}</span>
               </div>
               <div class="opp-meta">
@@ -107,10 +107,10 @@
                 </div>
               </div>
               <div class="opp-stats">
-                <span class="opp-stat" title="Strength">STR {{ user.stats.strength }}</span>
-                <span class="opp-stat" title="Speed">SPD {{ user.stats.speed }}</span>
-                <span class="opp-stat" title="Dexterity">DEX {{ user.stats.dexterity }}</span>
-                <span class="opp-stat" title="Defense">DEF {{ user.stats.defense }}</span>
+                <span class="opp-stat" title="Strength">STR {{ Math.round(user.stats.strength) }}</span>
+                <span class="opp-stat" title="Speed">SPD {{ Math.round(user.stats.speed) }}</span>
+                <span class="opp-stat" title="Dexterity">DEX {{ Math.round(user.stats.dexterity) }}</span>
+                <span class="opp-stat" title="Defense">DEF {{ Math.round(user.stats.defense) }}</span>
                 <span class="opp-stat opp-hp" title="HP">HP {{ user.hp }}</span>
               </div>
               <div class="opp-meta">

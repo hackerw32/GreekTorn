@@ -46,15 +46,35 @@
       <router-link to="/" class="btn btn-primary mt-md">Πίσω στην Αρχική</router-link>
     </div>
 
-    <!-- Coming Soon: Bust system -->
-    <div class="card cs-section">
-      <div class="cs-badge">🚧 Σύντομα</div>
-      <h3 class="cs-title">🔓 Σύστημα Αποφυλάκισης</h3>
-      <p class="text-muted cs-text">Βοήθησε άλλους παίκτες να αποδράσουν, κέρδισε Μέσον και φιλότιμο, ή πλήρωσε δικηγόρο!</p>
-      <div class="cs-features">
-        <span class="cs-feat">👥 Bust άλλων παικτών</span>
-        <span class="cs-feat">⚖️ Πρόσληψη δικηγόρου</span>
-        <span class="cs-feat">🏅 Κατάταξη busters</span>
+    <!-- Bust system -->
+    <div class="card bust-section">
+      <h3 class="bust-title">🔓 Αποφυλάκιση Άλλων</h3>
+      <p class="text-muted bust-desc">
+        Ξόδεψε 5 Μέσον για να αποφυλακίσεις έναν παίκτη. Κερδίζεις +10 Φιλότιμο.
+      </p>
+      <div class="bust-meson text-muted">Μέσον σου: <strong class="text-accent">{{ player.meson }}</strong></div>
+
+      <Transition name="fade">
+        <div v-if="bustMessage" class="bust-result" :class="bustSuccess ? 'result-success' : 'result-fail'">
+          {{ bustMessage }}
+        </div>
+      </Transition>
+
+      <div class="jailed-list">
+        <div v-for="jailedUser in jailedFakeUsers" :key="jailedUser.id" class="jailed-row">
+          <span class="jailed-icon">{{ jailedUser.icon }}</span>
+          <div class="jailed-info">
+            <strong>{{ jailedUser.nickname }}</strong>
+            <span class="text-muted" style="font-size:var(--font-size-xs);">Επ. {{ jailedUser.level }} · {{ jailedUser.location }}</span>
+          </div>
+          <button
+            class="btn btn-sm btn-primary"
+            :disabled="player.meson < 5 || bustedIds.includes(jailedUser.id)"
+            @click="bustPlayer(jailedUser)"
+          >
+            {{ bustedIds.includes(jailedUser.id) ? '✔ Αποφυλακίστηκε' : '🔓 Bust (5 Μέσον)' }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -66,6 +86,7 @@ import { usePlayerStore } from '../stores/playerStore'
 import { useGameStore } from '../stores/gameStore'
 import { calculateEscapeChance, calculateBribeCost } from '../engine/formulas'
 import { ESCAPE_COOLDOWN_MS } from '../data/constants'
+import { fakeUsers } from '../data/fakeUsers'
 
 const player = usePlayerStore()
 const gameStore = useGameStore()
@@ -73,6 +94,27 @@ const gameStore = useGameStore()
 const escapeMessage = ref('')
 const escapeSuccess = ref(false)
 const lastEscapeAttempt = ref(0)
+
+// Bust system
+const bustedIds = ref([])
+const bustMessage = ref('')
+const bustSuccess = ref(false)
+
+// Pick 4 fake users as "jailed" — deterministic selection
+const jailedFakeUsers = fakeUsers.filter((_, i) => i % 3 === 1).slice(0, 4)
+
+function bustPlayer(user) {
+  if (player.meson < 5 || bustedIds.value.includes(user.id)) return
+  player.addMeson(-5)
+  player.addFilotimo(10)
+  bustedIds.value.push(user.id)
+  bustMessage.value = `Αποφυλάκισες τον ${user.nickname}! +10 Φιλότιμο`
+  bustSuccess.value = true
+  player.logActivity(`🔓 Αποφυλάκωσε τον ${user.nickname} (+10 Φιλότιμο, -5 Μέσον)`, 'success')
+  gameStore.addNotification(`${user.nickname} αποφυλακίστηκε! +10 Φιλότιμο`, 'success')
+  gameStore.saveGame()
+  setTimeout(() => { bustMessage.value = '' }, 3000)
+}
 
 const remaining = computed(() => player.statusTimeRemaining)
 
@@ -214,43 +256,60 @@ function formatCash(amount) {
   color: var(--color-danger);
 }
 
-/* Coming soon section */
-.cs-section {
+/* Bust section */
+.bust-section {
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
-  align-items: center;
-  text-align: center;
-  border: 1px dashed var(--color-warning);
-  opacity: 0.7;
 }
 
-.cs-badge {
-  display: inline-block;
-  background: var(--bg-surface-raised);
-  border: 1px solid var(--color-warning);
-  color: var(--color-warning);
-  padding: 2px var(--space-sm);
-  border-radius: var(--border-radius-full);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
-}
+.bust-title { font-size: var(--font-size-md); margin: 0; }
+.bust-desc  { font-size: var(--font-size-xs); margin: 0; }
+.bust-meson { font-size: var(--font-size-sm); }
 
-.cs-title { font-size: var(--font-size-sm); margin: 0; }
-.cs-text { font-size: var(--font-size-xs); margin: 0; max-width: 280px; color: var(--text-secondary); }
-
-.cs-features {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-  justify-content: center;
-}
-
-.cs-feat {
-  background: var(--bg-surface-raised);
-  padding: 2px var(--space-sm);
+.bust-result {
+  padding: var(--space-xs) var(--space-sm);
   border-radius: var(--border-radius-md);
-  font-size: var(--font-size-xs);
-  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
 }
+
+.result-success {
+  border-left: 3px solid var(--color-success);
+  color: var(--color-success);
+}
+
+.result-fail {
+  border-left: 3px solid var(--color-danger);
+  color: var(--color-danger);
+}
+
+.jailed-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.jailed-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--bg-surface-raised);
+  border-radius: var(--border-radius-md);
+}
+
+.jailed-icon { font-size: 22px; flex-shrink: 0; }
+
+.jailed-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--font-size-sm);
+}
+
+/* Fade transition */
+.fade-enter-active, .fade-leave-active { transition: opacity 0.3s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>
