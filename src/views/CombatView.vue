@@ -19,6 +19,9 @@
           <span class="text-muted">Win Rate</span>
           <span class="text-mono text-accent">{{ combatStore.combatStats.winRate }}%</span>
         </div>
+        <button class="btn btn-sm btn-outline equip-btn" @click="showEquipPopup = true">
+          🛡️ Εξοπλισμός
+        </button>
       </div>
 
       <div class="mode-grid">
@@ -115,6 +118,7 @@
       @fight-end="onFightEnd"
     />
 
+    <BattleEquipPopup :open="showEquipPopup" @close="showEquipPopup = false" />
   </div>
 </template>
 
@@ -129,6 +133,7 @@ import { npcs, difficultyLabels } from '../data/npcs'
 import { fakeUsers, pvpTierLabels } from '../data/fakeUsers'
 import { calculateHospitalTime } from '../engine/formulas'
 import CombatArena from '../components/combat/CombatArena.vue'
+import BattleEquipPopup from '../components/combat/BattleEquipPopup.vue'
 
 const player = usePlayerStore()
 const combatStore = useCombatStore()
@@ -139,6 +144,7 @@ const router = useRouter()
 const screen = ref('mode')  // mode | select | fight
 const mode = ref('solo')    // solo | pvp
 const selectedOpponent = ref(null)
+const showEquipPopup = ref(false)
 
 const difficulties = [
   { key: 'easy',      ...difficultyLabels.easy },
@@ -232,7 +238,8 @@ function onFightEnd(result) {
 
 .page-title { font-size: var(--font-size-2xl); }
 
-.stats-row { display: flex; justify-content: space-around; }
+.stats-row { display: flex; justify-content: space-around; align-items: center; }
+.equip-btn { margin-left: auto; flex-shrink: 0; }
 .stat-pair {
   display: flex; flex-direction: column;
   align-items: center; gap: 2px;
