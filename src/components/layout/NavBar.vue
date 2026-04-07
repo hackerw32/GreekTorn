@@ -84,7 +84,7 @@ const extraItems = [
   { to: '/inventory', icon: '🎒', label: 'Αντικείμενα' },
   { to: '/newspaper', icon: '📰', label: 'Εφημερίδα' },
   { to: '/messages', icon: '💬', label: 'Μηνύματα' },
-  { to: '/forums', icon: '📢', label: 'Φόρουμ' },
+  { to: '/shop', icon: '🛒', label: 'Κατάστημα' },
   { to: '/bounties', icon: '🎯', label: 'Συμβόλαια' },
   { to: '/bazaar', icon: '🏪', label: 'Παζάρι' },
   { to: '/company', icon: '🏢', label: 'Εταιρεία' },

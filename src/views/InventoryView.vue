@@ -1,6 +1,9 @@
 <template>
   <div class="inventory-page">
-    <h2 class="page-title">🎒 Αντικείμενα</h2>
+    <div class="inv-title-row">
+      <h2 class="page-title">🎒 Αντικείμενα</h2>
+      <router-link to="/shop" class="btn btn-sm btn-outline">🛒 Κατάστημα</router-link>
+    </div>
 
     <!-- Equipped -->
     <div class="card equipped-section">
@@ -36,32 +39,6 @@
       >
         {{ tab.label }}
       </button>
-    </div>
-
-    <!-- Shop -->
-    <div v-if="activeTab === 'shop'" class="item-list">
-      <div v-for="item in buyableItems" :key="item.id" class="card item-card">
-        <div class="item-header">
-          <span class="item-icon">{{ item.icon }}</span>
-          <div class="item-info">
-            <strong :class="'rarity-' + item.rarity">{{ item.name }}</strong>
-            <p class="text-muted item-desc">{{ item.description }}</p>
-            <div class="item-stats">
-              <span v-if="item.damage" class="badge badge-danger">DMG {{ item.damage }}</span>
-              <span v-if="item.defense" class="badge badge-info">DEF {{ item.defense }}</span>
-              <span v-if="item.healAmount" class="badge badge-success">HP +{{ item.healAmount }}</span>
-              <span v-if="item.happinessBoost" class="badge badge-warning">Κέφι +{{ item.happinessBoost }}</span>
-            </div>
-          </div>
-        </div>
-        <button
-          class="btn btn-sm btn-primary"
-          :disabled="player.cash < item.buyPrice || player.level < item.levelRequired"
-          @click="inventory.buyItem(item.id)"
-        >
-          Αγορά €{{ item.buyPrice }}
-        </button>
-      </div>
     </div>
 
     <!-- Inventory items -->
@@ -113,7 +90,6 @@
 import { ref, computed } from 'vue'
 import { usePlayerStore } from '../stores/playerStore'
 import { useInventoryStore } from '../stores/inventoryStore'
-import { getBuyableItems } from '../data/items'
 
 const player = usePlayerStore()
 const inventory = useInventoryStore()
@@ -126,16 +102,11 @@ const tabs = [
   { key: 'medical', label: 'Ιατρικά' },
   { key: 'drug', label: 'Ουσίες' },
   { key: 'misc', label: 'Διάφορα' },
-  { key: 'shop', label: '🛒 Κατάστημα' },
 ]
 
 const filteredItems = computed(() => {
   if (activeTab.value === 'all') return inventory.sortedItems
   return inventory.sortedItems.filter(i => i.data.type === activeTab.value)
-})
-
-const buyableItems = computed(() => {
-  return getBuyableItems().sort((a, b) => a.buyPrice - b.buyPrice)
 })
 </script>
 
@@ -146,7 +117,13 @@ const buyableItems = computed(() => {
   gap: var(--space-md);
 }
 
-.page-title { font-size: var(--font-size-2xl); }
+.inv-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.page-title { font-size: var(--font-size-2xl); margin: 0; }
 
 .equip-slots {
   display: flex;
