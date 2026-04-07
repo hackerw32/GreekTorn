@@ -64,6 +64,13 @@
                   <p class="text-muted opp-desc">{{ npc.description }}</p>
                 </div>
               </div>
+              <div class="opp-stats">
+                <span class="opp-stat" title="Strength">STR {{ npc.stats.strength }}</span>
+                <span class="opp-stat" title="Speed">SPD {{ npc.stats.speed }}</span>
+                <span class="opp-stat" title="Dexterity">DEX {{ npc.stats.dexterity }}</span>
+                <span class="opp-stat" title="Defense">DEF {{ npc.stats.defense }}</span>
+                <span class="opp-stat opp-hp" title="HP">HP {{ npc.hp }}</span>
+              </div>
               <div class="opp-meta">
                 <span class="badge badge-info">Επ. {{ npc.level }}</span>
                 <span class="text-muted text-mono opp-cash">€{{ npc.rewards.cashMin }}-{{ npc.rewards.cashMax }}</span>
@@ -99,6 +106,13 @@
                   </div>
                 </div>
               </div>
+              <div class="opp-stats">
+                <span class="opp-stat" title="Strength">STR {{ user.stats.strength }}</span>
+                <span class="opp-stat" title="Speed">SPD {{ user.stats.speed }}</span>
+                <span class="opp-stat" title="Dexterity">DEX {{ user.stats.dexterity }}</span>
+                <span class="opp-stat" title="Defense">DEF {{ user.stats.defense }}</span>
+                <span class="opp-stat opp-hp" title="HP">HP {{ user.hp }}</span>
+              </div>
               <div class="opp-meta">
                 <span class="badge badge-info">Επ. {{ user.level }}</span>
                 <span class="text-muted text-mono opp-cash">€{{ user.rewards.cashMin }}-{{ user.rewards.cashMax }}</span>
@@ -129,6 +143,9 @@ import { usePlayerStore } from '../stores/playerStore'
 import { useCombatStore } from '../stores/combatStore'
 import { useInventoryStore } from '../stores/inventoryStore'
 import { useGameStore } from '../stores/gameStore'
+import { useMissionStore } from '../stores/missionStore'
+import { useAchievementStore } from '../stores/achievementStore'
+import { useFactionStore } from '../stores/factionStore'
 import { npcs, difficultyLabels } from '../data/npcs'
 import { fakeUsers, pvpTierLabels } from '../data/fakeUsers'
 import { calculateHospitalTime } from '../engine/formulas'
@@ -139,6 +156,9 @@ const player = usePlayerStore()
 const combatStore = useCombatStore()
 const inventory = useInventoryStore()
 const gameStore = useGameStore()
+const missionStore = useMissionStore()
+const achievementStore = useAchievementStore()
+const factionStore = useFactionStore()
 const router = useRouter()
 
 const screen = ref('mode')  // mode | select | fight
@@ -200,6 +220,12 @@ function onFightEnd(result) {
       `${result.isPvp ? 'PVP ' : ''}Νίκη! +€${result.cashReward} +${result.xpReward}XP`,
       'success'
     )
+
+    // Track missions & achievements
+    missionStore.onCombatWin(result.opponentId, selectedOpponent.value.difficulty || null, result.isPvp)
+    missionStore.onEarnCash(result.cashReward)
+    factionStore.addContribution(1)
+    achievementStore.checkAchievements()
   } else {
     player.resources.hp.current = 0
     const hospitalTime = calculateHospitalTime(0, player.resources.hp.max, selectedOpponent.value.level)
@@ -305,6 +331,16 @@ function onFightEnd(result) {
   display: flex; align-items: center;
   gap: var(--space-sm); flex-wrap: wrap;
 }
+.opp-stats {
+  display: flex; gap: var(--space-xs); flex-wrap: wrap;
+  margin-bottom: var(--space-xs);
+}
+.opp-stat {
+  font-size: 10px; font-family: var(--font-family-mono);
+  color: var(--text-secondary); background: var(--bg-surface-raised);
+  padding: 1px 5px; border-radius: var(--border-radius-sm);
+}
+.opp-hp { color: var(--color-danger); }
 .opp-cash { font-size: var(--font-size-xs); }
 .opp-energy { font-size: 10px; }
 

@@ -110,16 +110,16 @@ export function xpForLevel(level) {
 
 export function calculateHospitalTime(playerHP, playerMaxHP, npcLevel) {
   const hpRatio = 1 - (Math.max(0, playerHP) / playerMaxHP)
-  const baseMinutes = 1 + hpRatio * 4
-  const levelBonus = npcLevel * 0.5
+  const baseMinutes = 0.5 + hpRatio * 2
+  const levelBonus = npcLevel * 0.25
   return Math.floor((baseMinutes + levelBonus) * 60 * 1000)
 }
 
 export function calculateEscapeChance(remainingTimeMs, dexterity, meson) {
   const timeFactor = Math.min(1, 60000 / Math.max(1, remainingTimeMs))
   const dexFactor = dexterity / (dexterity + 30)
-  const mesonFactor = meson * 0.005
-  return Math.min(0.60, Math.max(0.03, 0.1 + timeFactor * 0.2 + dexFactor * 0.15 + mesonFactor))
+  const mesonFactor = meson * 0.002
+  return Math.min(0.50, Math.max(0.03, 0.1 + timeFactor * 0.2 + dexFactor * 0.15 + mesonFactor))
 }
 
 export function calculateBribeCost(remainingTimeMs) {

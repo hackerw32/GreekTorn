@@ -81,6 +81,36 @@ const routes = [
     component: () => import('../views/TravelView.vue')
   },
   {
+    path: '/daily',
+    name: 'daily',
+    component: () => import('../views/DailyRewardView.vue'),
+    meta: { allowIncapacitated: true }
+  },
+  {
+    path: '/achievements',
+    name: 'achievements',
+    component: () => import('../views/AchievementsView.vue'),
+    meta: { allowIncapacitated: true }
+  },
+  {
+    path: '/missions',
+    name: 'missions',
+    component: () => import('../views/MissionsView.vue'),
+    meta: { allowIncapacitated: true }
+  },
+  {
+    path: '/leaderboard',
+    name: 'leaderboard',
+    component: () => import('../views/LeaderboardView.vue'),
+    meta: { allowIncapacitated: true }
+  },
+  {
+    path: '/faction',
+    name: 'faction',
+    component: () => import('../views/FactionView.vue'),
+    meta: { allowIncapacitated: true }
+  },
+  {
     path: '/profile',
     name: 'profile',
     component: () => import('../views/ProfileView.vue'),

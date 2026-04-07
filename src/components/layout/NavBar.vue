@@ -70,6 +70,11 @@ const mainItems = [
 ]
 
 const extraItems = [
+  { to: '/daily', icon: '📅', label: 'Bonus' },
+  { to: '/missions', icon: '📋', label: 'Αποστολές' },
+  { to: '/achievements', icon: '🏆', label: 'Επιτεύγματα' },
+  { to: '/leaderboard', icon: '🏅', label: 'Κατάταξη' },
+  { to: '/faction', icon: '🏴', label: 'Συμμορία' },
   { to: '/travel', icon: '✈️', label: 'Ταξίδι' },
   { to: '/education', icon: '🎓', label: 'Εκπαίδευση' },
   { to: '/casino', icon: '🎲', label: 'Τυχερά' },

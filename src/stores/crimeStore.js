@@ -6,6 +6,8 @@ import { useGameStore } from './gameStore'
 import { useInventoryStore } from './inventoryStore'
 import { getItemById } from '../data/items'
 import { useTravelStore } from './travelStore'
+import { useMissionStore } from './missionStore'
+import { useAchievementStore } from './achievementStore'
 
 export const useCrimeStore = defineStore('crime', {
   state: () => ({
@@ -170,6 +172,13 @@ export const useCrimeStore = defineStore('crime', {
           gameStore.addNotification(`${result.label}: Αποτυχία!`, 'danger')
         }
       }
+
+      // Track missions & achievements
+      useMissionStore().onCrimeComplete(result.success)
+      if (result.success && result.rewards?.cash) {
+        useMissionStore().onEarnCash(result.rewards.cash)
+      }
+      useAchievementStore().checkAchievements()
 
       gameStore.saveGame()
     },
