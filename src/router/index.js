@@ -129,6 +129,12 @@ const routes = [
     meta: { allowIncapacitated: true }
   },
   {
+    path: '/shop',
+    name: 'shop',
+    component: () => import('../views/ShopView.vue'),
+    meta: { allowIncapacitated: true }
+  },
+  {
     path: '/bounties',
     name: 'bounties',
     component: () => import('../views/BountyView.vue'),
