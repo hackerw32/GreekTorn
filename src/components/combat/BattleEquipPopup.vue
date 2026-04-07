@@ -15,26 +15,26 @@
           <div class="stats-grid">
             <div class="stat-box">
               <span class="stat-label">STR</span>
-              <span class="stat-value text-danger">{{ player.stats.strength }}</span>
+              <span class="stat-value text-danger">{{ player.stats.strength.toFixed(2) }}</span>
             </div>
             <div class="stat-box">
               <span class="stat-label">SPD</span>
-              <span class="stat-value text-accent">{{ player.stats.speed }}</span>
+              <span class="stat-value text-accent">{{ player.stats.speed.toFixed(2) }}</span>
             </div>
             <div class="stat-box">
               <span class="stat-label">DEX</span>
-              <span class="stat-value text-success">{{ player.stats.dexterity }}</span>
+              <span class="stat-value text-success">{{ player.stats.dexterity.toFixed(2) }}</span>
             </div>
             <div class="stat-box">
               <span class="stat-label">DEF</span>
-              <span class="stat-value text-info">{{ player.stats.defense }}</span>
+              <span class="stat-value text-info">{{ player.stats.defense.toFixed(2) }}</span>
             </div>
           </div>
           <div class="stats-summary">
             <span class="text-muted">HP</span>
             <span class="text-mono">{{ player.resources.hp.current }}/{{ player.resources.hp.max }}</span>
             <span class="text-muted">Σύνολο</span>
-            <span class="text-mono text-accent">{{ player.totalStats }}</span>
+            <span class="text-mono text-accent">{{ player.totalStats.toFixed(2) }}</span>
           </div>
         </div>
 
