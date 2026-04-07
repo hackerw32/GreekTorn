@@ -43,8 +43,8 @@
           class="more-item"
           @click="showMore = false"
         >
-          <span class="nav-icon">{{ item.icon }}</span>
-          <span>{{ item.label }}</span>
+          <span class="more-item-icon">{{ item.icon }}</span>
+          <span class="more-item-label">{{ item.label }}</span>
         </router-link>
       </div>
     </div>
@@ -82,6 +82,12 @@ const extraItems = [
   { to: '/job', icon: '💼', label: 'Δουλειά' },
   { to: '/property', icon: '🏘️', label: 'Ακίνητα' },
   { to: '/inventory', icon: '🎒', label: 'Αντικείμενα' },
+  { to: '/newspaper', icon: '📰', label: 'Εφημερίδα' },
+  { to: '/messages', icon: '💬', label: 'Μηνύματα' },
+  { to: '/forums', icon: '📢', label: 'Φόρουμ' },
+  { to: '/bounties', icon: '🎯', label: 'Συμβόλαια' },
+  { to: '/bazaar', icon: '🏪', label: 'Παζάρι' },
+  { to: '/company', icon: '🏢', label: 'Εταιρεία' },
   { to: '/profile', icon: '👤', label: 'Προφίλ' },
   { to: '/settings', icon: '⚙️', label: 'Ρυθμίσεις' },
 ]
@@ -184,27 +190,48 @@ function isActive(path) {
 
 .more-menu {
   width: 100%;
+  max-height: 65vh;
+  overflow-y: auto;
   background: var(--bg-surface-overlay);
   border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
   padding: var(--space-md);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-sm);
 }
 
 .more-item {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: var(--space-md);
-  padding: var(--space-sm) var(--space-md);
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-xs);
   color: var(--text-primary);
   text-decoration: none;
   border-radius: var(--border-radius-md);
   transition: background var(--transition-fast);
+  text-align: center;
+  min-height: 60px;
 }
 
 .more-item:hover {
   background: var(--bg-surface-raised);
+}
+
+.more-item-icon {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.more-item-label {
+  font-size: 10px;
+  line-height: 1.2;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .more-toggle {
