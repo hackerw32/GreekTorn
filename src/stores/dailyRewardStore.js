@@ -14,12 +14,9 @@ export const useDailyRewardStore = defineStore('dailyReward', {
   }),
 
   getters: {
-    todayStr() {
-      return new Date().toISOString().split('T')[0]
-    },
-
     canClaim() {
-      return this.lastClaimDate !== this.todayStr
+      const today = new Date().toISOString().split('T')[0]
+      return this.lastClaimDate !== today
     },
 
     currentDay() {
@@ -69,7 +66,7 @@ export const useDailyRewardStore = defineStore('dailyReward', {
       if (reward.xp) player.addXP(reward.xp)
       if (reward.itemId) inventory.addItem(reward.itemId, 1)
 
-      this.lastClaimDate = this.todayStr
+      this.lastClaimDate = new Date().toISOString().split('T')[0]
       this.totalLogins++
       this.maxStreak = Math.max(this.maxStreak, this.currentStreak + 1)
       this.pendingReward = false

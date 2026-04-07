@@ -76,6 +76,18 @@
         </div>
       </div>
     </template>
+
+    <!-- Coming Soon sections -->
+    <div class="card cs-section">
+      <div class="cs-badge">🚧 Σύντομα</div>
+      <h3 class="cs-title">⚔️ Πόλεμοι Συμμοριών</h3>
+      <p class="text-muted cs-text">Κήρυξε πόλεμο σε αντίπαλες συμμορίες, κατάκτησε εδάφη και κέρδισε bonus πόρων!</p>
+    </div>
+    <div class="card cs-section">
+      <div class="cs-badge">🚧 Σύντομα</div>
+      <h3 class="cs-title">🎭 Οργανωμένο Έγκλημα</h3>
+      <p class="text-muted cs-text">Συνεργάσου με τα μέλη της συμμορίας σου για μεγάλα χτυπήματα και τεράστια κέρδη!</p>
+    </div>
   </div>
 </template>
 
@@ -181,4 +193,29 @@ function leave() {
   gap: var(--space-xs);
   font-size: var(--font-size-xs);
 }
+
+/* Coming soon sections */
+.cs-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  align-items: center;
+  text-align: center;
+  border: 1px dashed var(--color-warning);
+  opacity: 0.7;
+}
+
+.cs-badge {
+  display: inline-block;
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--color-warning);
+  color: var(--color-warning);
+  padding: 2px var(--space-sm);
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+}
+
+.cs-title { font-size: var(--font-size-sm); margin: 0; }
+.cs-text { font-size: var(--font-size-xs); margin: 0; max-width: 280px; }
 </style>

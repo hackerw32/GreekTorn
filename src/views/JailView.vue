@@ -45,6 +45,18 @@
       <p>Είσαι ελεύθερος! 🎉</p>
       <router-link to="/" class="btn btn-primary mt-md">Πίσω στην Αρχική</router-link>
     </div>
+
+    <!-- Coming Soon: Bust system -->
+    <div class="card cs-section">
+      <div class="cs-badge">🚧 Σύντομα</div>
+      <h3 class="cs-title">🔓 Σύστημα Αποφυλάκισης</h3>
+      <p class="text-muted cs-text">Βοήθησε άλλους παίκτες να αποδράσουν, κέρδισε Μέσον και φιλότιμο, ή πλήρωσε δικηγόρο!</p>
+      <div class="cs-features">
+        <span class="cs-feat">👥 Bust άλλων παικτών</span>
+        <span class="cs-feat">⚖️ Πρόσληψη δικηγόρου</span>
+        <span class="cs-feat">🏅 Κατάταξη busters</span>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -200,5 +212,45 @@ function formatCash(amount) {
 .result-fail {
   border-left: 3px solid var(--color-danger);
   color: var(--color-danger);
+}
+
+/* Coming soon section */
+.cs-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  align-items: center;
+  text-align: center;
+  border: 1px dashed var(--color-warning);
+  opacity: 0.7;
+}
+
+.cs-badge {
+  display: inline-block;
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--color-warning);
+  color: var(--color-warning);
+  padding: 2px var(--space-sm);
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+}
+
+.cs-title { font-size: var(--font-size-sm); margin: 0; }
+.cs-text { font-size: var(--font-size-xs); margin: 0; max-width: 280px; color: var(--text-secondary); }
+
+.cs-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  justify-content: center;
+}
+
+.cs-feat {
+  background: var(--bg-surface-raised);
+  padding: 2px var(--space-sm);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
 }
 </style>
