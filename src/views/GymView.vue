@@ -128,10 +128,12 @@ import { getAvailableGym, getNextGym } from '../data/gyms'
 import { getExercisesForStat } from '../data/exercises'
 import { calculateStatGain } from '../engine/formulas'
 import { useTravelStore } from '../stores/travelStore'
+import { useMissionStore } from '../stores/missionStore'
 import DiceRoll from '../components/ui/DiceRoll.vue'
 
 const player = usePlayerStore()
 const gameStore = useGameStore()
+const missionStore = useMissionStore()
 const travelStore = useTravelStore()
 
 const selectedStat = ref('strength')
@@ -235,6 +237,7 @@ function onDiceDismiss() {
       player.trainStat(r.statKey, r.statGain)
       player.logActivity(`💪 ${r.statName}: +${r.statGain.toFixed(3)}`, 'info')
       gameStore.addNotification(`${r.statName}: +${r.statGain.toFixed(3)}`, 'success')
+      missionStore.onGymTrain()
     }
     player.clearPendingResult()
     gameStore.saveGame()

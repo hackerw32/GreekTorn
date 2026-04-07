@@ -10,6 +10,10 @@ import { useTravelStore } from './travelStore'
 import { useEducationStore } from './educationStore'
 import { useCasinoStore } from './casinoStore'
 import { useStockStore } from './stockStore'
+import { useDailyRewardStore } from './dailyRewardStore'
+import { useAchievementStore } from './achievementStore'
+import { useMissionStore } from './missionStore'
+import { useFactionStore } from './factionStore'
 
 let toastId = 0
 
@@ -44,6 +48,8 @@ export const useGameStore = defineStore('game', {
       this.initialized = true
       const stockStore = useStockStore()
       stockStore.initializePrices()
+      useDailyRewardStore().checkDaily()
+      useMissionStore().refreshMissions()
       this.saveGame()
     },
 
@@ -70,6 +76,10 @@ export const useGameStore = defineStore('game', {
             education: useEducationStore().getSerializable(),
             casino: useCasinoStore().getSerializable(),
             stock: useStockStore().getSerializable(),
+            dailyReward: useDailyRewardStore().getSerializable(),
+            achievement: useAchievementStore().getSerializable(),
+            mission: useMissionStore().getSerializable(),
+            faction: useFactionStore().getSerializable(),
           }
         }
 
@@ -138,6 +148,23 @@ export const useGameStore = defineStore('game', {
           stockStore.initializePrices()
         }
 
+        const dailyRewardStore = useDailyRewardStore()
+        if (saveData.stores.dailyReward) {
+          dailyRewardStore.hydrate(saveData.stores.dailyReward)
+        }
+        const achievementStore = useAchievementStore()
+        if (saveData.stores.achievement) {
+          achievementStore.hydrate(saveData.stores.achievement)
+        }
+        const missionStore = useMissionStore()
+        if (saveData.stores.mission) {
+          missionStore.hydrate(saveData.stores.mission)
+        }
+        const factionStore = useFactionStore()
+        if (saveData.stores.faction) {
+          factionStore.hydrate(saveData.stores.faction)
+        }
+
         // Calculate offline progress
         const elapsed = Math.min(MAX_OFFLINE_MS, Date.now() - (saveData.timestamp || Date.now()))
         if (elapsed > 5000) { // Only if more than 5 seconds passed
@@ -146,6 +173,12 @@ export const useGameStore = defineStore('game', {
 
         this.initialized = true
         this.lastSaveTimestamp = saveData.timestamp
+
+        // Check daily systems
+        useDailyRewardStore().checkDaily()
+        useMissionStore().refreshMissions()
+        useAchievementStore().checkAchievements()
+
         return true
       } catch (e) {
         console.error('Load failed:', e)

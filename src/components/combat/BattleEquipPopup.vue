@@ -9,6 +9,35 @@
           <button class="btn btn-sm btn-outline" @click="$emit('close')">✕</button>
         </div>
 
+        <!-- Player Stats -->
+        <div class="equip-section">
+          <h4 class="section-title">Τα Stats Σου</h4>
+          <div class="stats-grid">
+            <div class="stat-box">
+              <span class="stat-label">STR</span>
+              <span class="stat-value text-danger">{{ player.stats.strength }}</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-label">SPD</span>
+              <span class="stat-value text-accent">{{ player.stats.speed }}</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-label">DEX</span>
+              <span class="stat-value text-success">{{ player.stats.dexterity }}</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-label">DEF</span>
+              <span class="stat-value text-info">{{ player.stats.defense }}</span>
+            </div>
+          </div>
+          <div class="stats-summary">
+            <span class="text-muted">HP</span>
+            <span class="text-mono">{{ player.resources.hp.current }}/{{ player.resources.hp.max }}</span>
+            <span class="text-muted">Σύνολο</span>
+            <span class="text-mono text-accent">{{ player.totalStats }}</span>
+          </div>
+        </div>
+
         <!-- Currently Equipped -->
         <div class="equip-section">
           <h4 class="section-title">Εξοπλισμένα</h4>
@@ -145,6 +174,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useInventoryStore } from '../../stores/inventoryStore'
+import { usePlayerStore } from '../../stores/playerStore'
 
 defineProps({
   open: { type: Boolean, default: false }
@@ -153,6 +183,7 @@ defineProps({
 defineEmits(['close'])
 
 const inventory = useInventoryStore()
+const player = usePlayerStore()
 
 const ownedWeapons = computed(() =>
   inventory.sortedItems.filter(i => i.data.type === 'weapon')
@@ -324,6 +355,50 @@ const ownedConsumables = computed(() =>
   padding: var(--space-lg) var(--space-md);
   font-size: var(--font-size-sm);
 }
+
+/* Player stats grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-xs);
+}
+
+.stat-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+}
+
+.stat-label {
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  font-family: var(--font-family-mono);
+}
+
+.stats-summary {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-md);
+  font-size: var(--font-size-sm);
+  align-items: center;
+}
+
+.text-info { color: var(--color-info); }
+.text-accent { color: var(--color-accent); }
+.text-danger { color: var(--color-danger); }
+.text-success { color: var(--color-success); }
 
 /* Rarity colors */
 .rarity-common { color: var(--text-primary); }
