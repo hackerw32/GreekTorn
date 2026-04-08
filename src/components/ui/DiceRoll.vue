@@ -98,7 +98,7 @@
               </div>
             </div>
 
-            <div v-if="mode === 'check' && !result?.success && result?.consequence" class="dice-consequence">
+            <div v-if="result?.consequence && (mode !== 'check' || !result?.success)" class="dice-consequence">
               {{ result.consequence }}
             </div>
 

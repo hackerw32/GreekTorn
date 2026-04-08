@@ -123,6 +123,12 @@ const routes = [
     meta: { allowIncapacitated: true }
   },
   {
+    path: '/kontres',
+    name: 'kontres',
+    component: () => import('../views/KontresView.vue'),
+    meta: { allowIncapacitated: true }
+  },
+  {
     path: '/forums',
     name: 'forums',
     component: () => import('../views/ForumsView.vue'),
