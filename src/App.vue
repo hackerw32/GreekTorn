@@ -18,7 +18,6 @@
 
     <!-- Global travel dice: shows on any page when a travel result is pending -->
     <DiceRoll
-      v-if="gameStore.initialized"
       :visible="travelDiceVisible"
       :result="travelDiceResult"
       @dismiss="onTravelDiceDismiss"
