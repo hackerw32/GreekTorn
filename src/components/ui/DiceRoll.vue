@@ -205,15 +205,20 @@ onBeforeUnmount(cleanup)
 </script>
 
 <style scoped>
+/* Scrollable overlay so the Continue button is never cut off on small screens */
 .dice-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.82);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  overflow-y: auto;
   z-index: 1000;
   padding: var(--space-md);
+  /* Push content to center vertically when there's room */
+  padding-top: max(env(safe-area-inset-top, 0px), var(--space-lg));
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--space-lg));
 }
 
 .dice-container {
@@ -228,6 +233,7 @@ onBeforeUnmount(cleanup)
   flex-direction: column;
   align-items: center;
   gap: var(--space-md);
+  margin: auto; /* centers vertically when overlay has extra space */
 }
 
 .dice-header {

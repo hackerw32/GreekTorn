@@ -15,20 +15,77 @@
       <NavBar :vertical="false" />
     </nav>
     <ToastNotification />
+
+    <!-- Global travel dice: shows on any page when a travel result is pending -->
+    <DiceRoll
+      v-if="gameStore.initialized"
+      :visible="travelDiceVisible"
+      :result="travelDiceResult"
+      @dismiss="onTravelDiceDismiss"
+    />
   </div>
 </template>
 
 <script setup>
-import { onMounted, watch } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore } from './stores/gameStore'
+import { usePlayerStore } from './stores/playerStore'
+import { useTravelStore } from './stores/travelStore'
 import StatusBar from './components/layout/StatusBar.vue'
 import NavBar from './components/layout/NavBar.vue'
 import ToastNotification from './components/ui/ToastNotification.vue'
+import DiceRoll from './components/ui/DiceRoll.vue'
 
 const gameStore = useGameStore()
+const player = usePlayerStore()
+const travelStore = useTravelStore()
 const router = useRouter()
 
+// ── Travel dice (global) ──────────────────────────────────────────────────
+// Travel pending results must be resolved before anything else can happen.
+// By watching here (App.vue), the dice shows on any page — it can never get stuck.
+const travelDiceVisible = ref(false)
+const travelDiceResult = ref(null)
+
+watch(() => player.pendingResult, (result) => {
+  if (!result || result.type !== 'travel') {
+    travelDiceVisible.value = false
+    return
+  }
+  travelDiceResult.value = {
+    type: 'travel',
+    mode: 'check',
+    label: result.label || 'Ταξίδι',
+    icon: result.mode === 'plane' ? '✈️' : '🚆',
+    roll: result.roll,
+    targetRoll: 2,
+    success: result.success,
+    consequence: result.consequence,
+    destinationId: result.destinationId,
+    travelMode: result.mode,
+  }
+  travelDiceVisible.value = true
+}, { immediate: true })
+
+function onTravelDiceDismiss() {
+  const result = travelDiceResult.value
+  travelDiceVisible.value = false
+  travelDiceResult.value = null
+  player.clearPendingResult()
+
+  if (!result) return
+
+  if (result.success) {
+    travelStore.arriveAtDestination(result.destinationId)
+  } else {
+    travelStore.handleTravelFailure(result.travelMode)
+    setTimeout(() => router.push('/hospital'), 600)
+  }
+  gameStore.saveGame()
+}
+
+// ── Game init ─────────────────────────────────────────────────────────────
 onMounted(() => {
   gameStore.init()
 })

@@ -132,32 +132,21 @@
       </div>
     </div>
 
-    <!-- Dice Roll overlay for travel result -->
-    <DiceRoll
-      :visible="showDice"
-      :result="diceResult"
-      @dismiss="onDiceDismiss"
-    />
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref } from 'vue'
 import { usePlayerStore } from '../stores/playerStore'
 import { useTravelStore, calculateTravelCost } from '../stores/travelStore'
 import { useGameStore } from '../stores/gameStore'
 import { getTravelTime as _getTravelTime } from '../data/locations'
-import DiceRoll from '../components/ui/DiceRoll.vue'
 
 const player = usePlayerStore()
 const travelStore = useTravelStore()
 const gameStore = useGameStore()
-const router = useRouter()
 
 const selectedDest = ref(null)
-const showDice = ref(false)
-const diceResult = ref(null)
 
 function getTravelTime(destId) {
   return _getTravelTime(travelStore.currentLocation, destId)
@@ -183,41 +172,6 @@ function travel(dest, mode) {
     return
   }
   selectedDest.value = null
-}
-
-// Watch for pending travel result → show dice
-watch(() => player.pendingResult, (result) => {
-  if (!result || result.type !== 'travel') return
-
-  diceResult.value = {
-    type: 'travel',
-    mode: 'check',
-    label: result.label || 'Ταξίδι',
-    icon: result.mode === 'plane' ? '✈️' : '🚆',
-    roll: result.roll,
-    targetRoll: 2,
-    success: result.success,
-    consequence: result.consequence,
-    destinationId: result.destinationId,
-    travelMode: result.mode,
-  }
-  showDice.value = true
-}, { immediate: true })
-
-function onDiceDismiss() {
-  const result = diceResult.value
-  showDice.value = false
-  diceResult.value = null
-  player.clearPendingResult()
-
-  if (!result) return
-
-  if (result.success) {
-    travelStore.arriveAtDestination(result.destinationId)
-  } else {
-    travelStore.handleTravelFailure(result.travelMode)
-    setTimeout(() => router.push('/hospital'), 600)
-  }
 }
 
 function formatTime(ms) {
