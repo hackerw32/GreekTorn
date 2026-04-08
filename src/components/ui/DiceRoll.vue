@@ -172,7 +172,7 @@ watch(() => props.visible, (val) => {
     cleanup()
     phase.value = 'idle'
   }
-})
+}, { immediate: true })
 
 function startRolling() {
   phase.value = 'rolling'
