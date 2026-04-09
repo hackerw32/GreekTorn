@@ -1,6 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { useGameStore } from '../stores/gameStore'
 import { usePlayerStore } from '../stores/playerStore'
+import { useEventsHubStore } from '../stores/eventsHubStore'
 
 const routes = [
   {
@@ -111,10 +112,14 @@ const routes = [
     meta: { allowIncapacitated: true }
   },
   {
-    path: '/newspaper',
-    name: 'newspaper',
+    path: '/events-hub',
+    name: 'events-hub',
     component: () => import('../views/NewspaperView.vue'),
     meta: { allowIncapacitated: true }
+  },
+  {
+    path: '/newspaper',
+    redirect: '/events-hub',
   },
   {
     path: '/messages',
@@ -194,6 +199,10 @@ router.beforeEach((to) => {
     if (playerStore.status === 'hospital') return { path: '/hospital' }
     if (playerStore.status === 'jail') return { path: '/jail' }
   }
+})
+
+router.afterEach((to, from) => {
+  useEventsHubStore().maybeTriggerExplorationOnNavigate(to.path, from.path)
 })
 
 export default router

@@ -85,17 +85,25 @@ export const usePlayerStore = defineStore('player', {
       return this.status === 'free' && !this.activeActivity && !this.pendingResult
     },
 
+    /** Πολλαπλασιαστής χρόνου για την τρέχουσα δραστηριότητα (1 = κανονικά, 3 = γρήγορα). */
+    activityTimeScale() {
+      if (!this.activeActivity) return 1
+      const s = Number(this.activeActivity.timeScale)
+      return Number.isFinite(s) && s >= 1 ? s : 1
+    },
+
     activityTimeRemaining() {
       if (!this.activeActivity) return 0
       // Reference lastTick so this getter recomputes every game loop frame
-      const elapsed = this.lastTick - this.activeActivity.startTime
+      const scale = this.activityTimeScale
+      const elapsed = (this.lastTick - this.activeActivity.startTime) * scale
       return Math.max(0, this.activeActivity.duration - elapsed)
     },
 
     activityProgress() {
       if (!this.activeActivity) return 0
-      // Reference lastTick so this getter recomputes every game loop frame
-      const elapsed = this.lastTick - this.activeActivity.startTime
+      const scale = this.activityTimeScale
+      const elapsed = (this.lastTick - this.activeActivity.startTime) * scale
       return Math.min(1, elapsed / this.activeActivity.duration)
     },
 
@@ -213,12 +221,20 @@ export const usePlayerStore = defineStore('player', {
     },
 
     startActivity(activity) {
-      // activity: { type, id, label, icon, startTime, duration, preRolled }
+      // activity: { type, id, label, icon, startTime, duration, preRolled, timeScale? }
       this.activeActivity = {
         ...activity,
         startTime: Date.now(),
+        timeScale: activity.timeScale != null ? Math.max(1, Number(activity.timeScale) || 1) : 1,
       }
       this.pendingResult = null
+    },
+
+    /** Εναλλαγή «γρήγορης προώθησης» μόνο για την τρέχουσα δραστηριότητα (x1 ↔ x3). */
+    toggleActivityFastForward() {
+      if (!this.activeActivity || this.pendingResult) return
+      const cur = Number(this.activeActivity.timeScale) || 1
+      this.activeActivity.timeScale = cur >= 3 ? 1 : 3
     },
 
     resolveActivity() {
@@ -263,9 +279,11 @@ export const usePlayerStore = defineStore('player', {
         }
       }
 
-      // Check if active activity timer has expired
+      // Check if active activity timer has expired (timeScale = «fast forward» μόνο για αυτό το task)
       if (this.activeActivity && !this.pendingResult) {
-        const elapsed = Date.now() - this.activeActivity.startTime
+        const scale = Number(this.activeActivity.timeScale)
+        const timeScale = Number.isFinite(scale) && scale >= 1 ? scale : 1
+        const elapsed = (Date.now() - this.activeActivity.startTime) * timeScale
         if (elapsed >= this.activeActivity.duration) {
           this.resolveActivity()
         }

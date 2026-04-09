@@ -18,6 +18,7 @@ import { useBazaarStore } from './bazaarStore'
 import { useCompanyStore } from './companyStore'
 import { useBountyStore } from './bountyStore'
 import { useRacingStore } from './racingStore'
+import { useEventsHubStore } from './eventsHubStore'
 
 let toastId = 0
 
@@ -88,6 +89,7 @@ export const useGameStore = defineStore('game', {
             company: useCompanyStore().getSerializable(),
             bounty: useBountyStore().getSerializable(),
             racing: useRacingStore().getSerializable(),
+            eventsHub: useEventsHubStore().getSerializable(),
           }
         }
 
@@ -187,6 +189,9 @@ export const useGameStore = defineStore('game', {
         const racingStore = useRacingStore()
         if (saveData.stores.racing) {
           racingStore.hydrate(saveData.stores.racing)
+        }
+        if (saveData.stores.eventsHub) {
+          useEventsHubStore().hydrate(saveData.stores.eventsHub)
         }
 
         // Calculate offline progress

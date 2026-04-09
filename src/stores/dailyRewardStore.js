@@ -5,6 +5,16 @@ import { useInventoryStore } from './inventoryStore'
 import { useGameStore } from './gameStore'
 import { usePropertyStore } from './propertyStore'
 
+const AMBUSH_ATTACKERS = [
+  'Άγνωστος μπράτσος',
+  'Ρουφιάνος της γειτονιάς',
+  'Χρεωμένος στο περίπτερο',
+  'Φανατικός οπαδός',
+  'Ξεχασμένος εχθρός από το παρελθόν',
+  'Τύπος με κουκούλα',
+  'Νυχτοφύλακας που μπέρδεψε τα πρόσωπα',
+]
+
 export const useDailyRewardStore = defineStore('dailyReward', {
   state: () => ({
     lastClaimDate: null,   // 'YYYY-MM-DD' string
@@ -12,6 +22,8 @@ export const useDailyRewardStore = defineStore('dailyReward', {
     maxStreak: 0,
     totalLogins: 0,
     pendingReward: false,  // true when reward is available but not yet claimed
+    /** Ημερομηνία (YYYY-MM-DD) που έγινε ήδη ο έλεγχος τυχαίας καθημερινής επίθεσης */
+    lastAmbushCheckDate: null,
   }),
 
   getters: {
@@ -38,9 +50,51 @@ export const useDailyRewardStore = defineStore('dailyReward', {
     checkDaily() {
       // Process daily rent/eviction cycle whenever daily systems refresh.
       usePropertyStore().checkDailyRent()
+      this.rollDailyAmbush()
       if (this.canClaim) {
         this.pendingReward = true
       }
+    },
+
+    /**
+     * Μία φορά ανά ημερολογιακή ημέρα: 10% τυχαία επίθεση (ζημιά HP ή νοσοκομείο).
+     */
+    rollDailyAmbush() {
+      const today = new Date().toISOString().split('T')[0]
+      if (this.lastAmbushCheckDate === today) return
+      this.lastAmbushCheckDate = today
+
+      const player = usePlayerStore()
+      const gameStore = useGameStore()
+
+      if (player.isIncapacitated) return
+      if (Math.random() >= 0.1) return
+
+      const attacker = AMBUSH_ATTACKERS[Math.floor(Math.random() * AMBUSH_ATTACKERS.length)]
+
+      if (Math.random() < 0.35) {
+        const minutes = 12 + Math.floor(Math.random() * 14)
+        const ms = minutes * 60 * 1000
+        player.setStatus('hospital', ms)
+        player.resources.hp.current = Math.max(1, Math.floor(player.resources.hp.max * (0.2 + Math.random() * 0.15)))
+        gameStore.addNotification(
+          `💀 Επίθεση! Κάποιος σε πρόλαβε στο δρόμο («${attacker}»). Σε έστειλαν νοσοκομείο (~${minutes}λ).`,
+          'hospital'
+        )
+        player.logActivity(`🏥 Επίθεση: νοσοκομείο — ${attacker}`, 'danger')
+      } else {
+        const pct = 0.07 + Math.random() * 0.13
+        const loss = Math.max(8, Math.floor(player.resources.hp.max * pct))
+        player.modifyResource('hp', -loss)
+        if (player.resources.hp.current < 1) player.resources.hp.current = 1
+        gameStore.addNotification(
+          `👊 Επίθεση! Ο/Η «${attacker}» σε χτύπησε. -${loss} HP.`,
+          'danger'
+        )
+        player.logActivity(`👊 Επίθεση: -${loss} HP — ${attacker}`, 'danger')
+      }
+
+      gameStore.saveGame()
     },
 
     claimReward() {
@@ -87,6 +141,7 @@ export const useDailyRewardStore = defineStore('dailyReward', {
         currentStreak: this.currentStreak,
         maxStreak: this.maxStreak,
         totalLogins: this.totalLogins,
+        lastAmbushCheckDate: this.lastAmbushCheckDate,
       }
     },
 
@@ -96,6 +151,7 @@ export const useDailyRewardStore = defineStore('dailyReward', {
       if (data.currentStreak !== undefined) this.currentStreak = data.currentStreak
       if (data.maxStreak !== undefined) this.maxStreak = data.maxStreak
       if (data.totalLogins !== undefined) this.totalLogins = data.totalLogins
+      if (data.lastAmbushCheckDate !== undefined) this.lastAmbushCheckDate = data.lastAmbushCheckDate
     },
   },
 })

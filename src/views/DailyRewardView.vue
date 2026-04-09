@@ -117,7 +117,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { usePlayerStore } from '../stores/playerStore'
 import { useDailyRewardStore } from '../stores/dailyRewardStore'
 import { useGameStore } from '../stores/gameStore'
@@ -177,6 +177,13 @@ function getIcon(index) {
 onMounted(async () => {
   await nextTick(); // Περιμένουμε να γίνει render το DOM
   focusOnToday(false); // Άμεσο focus χωρίς smooth scroll στο πρώτο load
+});
+
+onUnmounted(() => {
+  if (adTimer) {
+    clearInterval(adTimer);
+    adTimer = null;
+  }
 });
 
 function focusOnToday(smooth = true) {
@@ -262,24 +269,40 @@ const fakeAds = [
   { icon: '🧻', title: 'Χαρτί Υγείας "Ο Μίδας"', text: 'Η μετοχή ανέβηκε 50%! Αγόρασε τώρα το απόλυτο σύμβολο πλούτου στο Torn!' },
   { icon: '👵', title: 'Καυτές Γιαγιάδες!', text: 'Στην περιοχή σου ψάχνουν κάποιον... να τους περάσει το δρόμο με ασφάλεια.' },
   { icon: '💊', title: 'Xanax σε Προσφορά', text: 'Γιατί το GreekTorn φέρνει πολύ στρες. -20% σε όλα τα φαρμακεία!' },
-  { icon: '🚗', title: 'Μάντρα του Μήτσου', text: 'Αγοράζουμε κλεμμένα αυτοκίνητα, πουλάμε... ελαφρώς μεταχειρισμένα! Εγγύηση.' },
-  { icon: '💼', title: 'Γίνε CEO Σήμερα!', text: 'Απλά στείλε 10.000€ στον λογαριασμό μας και μάθε το μυστικό. (ΔΕΝ ΕΙΝΑΙ ΑΠΑΤΗ)' }
+  { icon: '🚗', title: 'Μάντρα του Μήτσου', text: 'Αγοράζουμε κλεμμένα αυτοκίνητα, πουλάμε... ψιλομεταχειρισμένα! Εγγύηση μορμαδόρου.' },
+  { icon: '💼', title: 'Γίνε CEO Σήμερα!', text: 'Απλά στείλε 10.000€ στον λογαριασμό μας και μάθε το μυστικό. (ΔΕΝ ΕΙΝΑΙ ΑΠΑΤΗ)' },
+  { icon: '🥙', title: 'Crypto-Souvlaki NFT', text: 'Κάθε καλαμάκι είναι μοναδικό στο blockchain. Ξεπούλησαν· τώρα μόνο στα μεταχειρισμένα του Monastiraki.' },
+  { icon: '🕵️', title: 'VPN «Φακελάκι Pro»', text: 'Κρυπτογράφηση στρατιωτικού επιπέδου για να μην σε βρει ποτέ το ΕΣΥ, το Taxisnet ή η θεία σου.' },
+  { icon: '💔', title: 'Tinder για Πεθερές', text: 'Swipe αριστερά = "δεν μαγειρεύει καλά τα λαχανικά". Σύνδεση με LinkedIn της κουμπάρας.' },
+  { icon: '🎓', title: 'Masterclass Υπουργείου', text: '"Πώς να λες δεν ξέρω με αυτοπεποίθηση" σε 12 άτοκες δόσεις. Πιστοποιητικό εκτυπώνεται μόνο σε Comic Sans.' },
+  { icon: '🛴', title: 'Ασφάλιση Patinete Deluxe', text: 'Καλύπτει κλοπή, ραγίσματα και κλάματα γείτονα. *Δεν καλύπτει αν το πάρει ο Δήμος και το πετάξει στο φορτηγό.' },
 ];
 const currentAd = ref(fakeAds[0]);
 
 function startAd() {
   showRecoveryModal.value = false;
+  if (adTimer) {
+    clearInterval(adTimer);
+    adTimer = null;
+  }
   currentAd.value = fakeAds[Math.floor(Math.random() * fakeAds.length)];
   isWatchingAd.value = true;
   adCountdown.value = 5;
 
   adTimer = setInterval(() => {
     adCountdown.value--;
-    if (adCountdown.value <= 0) { clearInterval(adTimer); }
+    if (adCountdown.value <= 0) {
+      clearInterval(adTimer);
+      adTimer = null;
+    }
   }, 1000);
 }
 
 function finishAd() {
+  if (adTimer) {
+    clearInterval(adTimer);
+    adTimer = null;
+  }
   isWatchingAd.value = false;
   simulatedMissedDays.value = 0; // Τον "συγχωρούμε"
   gameStore.addNotification('📺 Το σερί σου σώθηκε! Πατά πάνω στη μέρα για να πάρεις τα δώρα.', 'success');

@@ -1,16 +1,30 @@
 <template>
-  <div class="activity-timer" v-if="player.activeActivity" @click="navigateToActivity">
-    <div class="activity-info">
-      <span class="activity-icon">{{ player.activeActivity.icon }}</span>
-      <span class="activity-label">{{ player.activeActivity.label }}</span>
-      <span class="activity-time text-mono">{{ formatTime(player.activityTimeRemaining) }}</span>
+  <div class="activity-timer" v-if="player.activeActivity">
+    <div class="activity-timer-main" @click="navigateToActivity">
+      <div class="activity-info">
+        <span class="activity-icon">{{ player.activeActivity.icon }}</span>
+        <span class="activity-label">{{ player.activeActivity.label }}</span>
+        <span v-if="player.activityTimeScale >= 3" class="ff-badge">x3</span>
+        <span class="activity-time text-mono">{{ formatTime(player.activityTimeRemaining) }}</span>
+      </div>
+      <div class="activity-bar-track">
+        <div
+          class="activity-bar-fill"
+          :class="{ 'is-fast': player.activityTimeScale >= 3 }"
+          :style="{ width: (player.activityProgress * 100) + '%' }"
+        />
+      </div>
     </div>
-    <div class="activity-bar-track">
-      <div
-        class="activity-bar-fill"
-        :style="{ width: (player.activityProgress * 100) + '%' }"
-      />
-    </div>
+    <button
+      type="button"
+      class="ff-btn"
+      :class="{ active: player.activityTimeScale >= 3 }"
+      title="Γρήγορη προώθηση χρόνου (x3) μόνο γι' αυτή τη δραστηριότητα. Πάτα ξανά για κανονικό ρολόι."
+      aria-label="Γρήγορη προώθηση χρόνου"
+      @click.stop="player.toggleActivityFastForward()"
+    >
+      >>
+    </button>
   </div>
 </template>
 
@@ -41,16 +55,62 @@ function navigateToActivity() {
 
 <style scoped>
 .activity-timer {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-xs);
   background: var(--bg-surface-raised);
   border: 1px solid var(--color-accent);
   border-radius: var(--border-radius-md);
-  padding: var(--space-xs) var(--space-sm);
-  cursor: pointer;
-  transition: background 0.2s;
+  padding: var(--space-xs) var(--space-xs) var(--space-xs) var(--space-sm);
 }
 
-.activity-timer:hover {
+.activity-timer-main {
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.activity-timer-main:hover .activity-label {
+  color: var(--color-accent);
+}
+
+.ff-btn {
+  flex-shrink: 0;
+  align-self: center;
+  width: 2rem;
+  min-height: 2.25rem;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-base);
+  color: var(--text-secondary);
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.ff-btn:hover {
   background: var(--bg-hover);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.ff-btn.active {
+  background: rgba(76, 175, 80, 0.2);
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.ff-badge {
+  flex-shrink: 0;
+  font-size: 9px;
+  font-weight: 900;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--color-success);
+  color: #fff;
 }
 
 .activity-info {
@@ -91,5 +151,9 @@ function navigateToActivity() {
   background: var(--color-accent);
   border-radius: var(--border-radius-full);
   transition: width 0.3s linear;
+}
+
+.activity-bar-fill.is-fast {
+  background: linear-gradient(90deg, var(--color-accent), var(--color-success));
 }
 </style>

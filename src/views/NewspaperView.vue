@@ -1,6 +1,15 @@
 <template>
   <div class="newspaper-page">
-    <h2 class="page-title">📰 Εφημερίδα Χάους</h2>
+    <h2 class="page-title">📡 Events Hub</h2>
+    <p class="page-sub text-muted">Νέα, στατιστικά και τυχαία συμβάντα στην πόλη.</p>
+
+    <div v-if="eventsHub.hubUnread" class="card read-banner">
+      <div class="read-banner-row">
+        <span class="read-banner-icon">🔔</span>
+        <p class="read-banner-text">Υπάρχουν νέα ή συμβάντα που δεν έχεις σημειώσει ως διαβασμένα.</p>
+        <button type="button" class="btn btn-sm btn-primary" @click="markRead">Διαβάστηκε</button>
+      </div>
+    </div>
 
     <!-- Tab bar -->
     <div class="tab-bar">
@@ -14,6 +23,36 @@
         {{ tab.icon }} {{ tab.label }}
       </button>
     </div>
+
+    <!-- City exploration -->
+    <template v-if="activeTab === 'city'">
+      <div class="card city-intro">
+        <h3 class="city-intro-title">🚶 Τυχαία συμβάντα στην πόλη</h3>
+        <p class="text-muted city-intro-body">
+          Κάθε φορά που αλλάζεις σελίδα στο παιχνίδι, υπάρχει <strong>5% πιθανότητα</strong> να συμβεί κάτι στον δρόμο:
+          λεφτά, μικροατυχήματα, ευρήματα στα σκουπίδια και άλλα. (Έως ένα συμβάν ανά ~30 δευτ.)
+        </p>
+      </div>
+      <div v-if="!eventsHub.explorationLog.length" class="card text-center text-muted">
+        Δεν έχεις ακόμα καταγεγραμμένα συμβάντα. Συνέχισε να περιηγείσαι — η πόλη κρύβει εκπλήξεις.
+      </div>
+      <div
+        v-for="entry in eventsHub.explorationLog"
+        :key="entry.id"
+        class="card explore-card"
+        :class="'kind-' + entry.kind"
+      >
+        <div class="explore-head">
+          <span class="explore-icon">{{ entry.icon }}</span>
+          <div>
+            <strong class="explore-title">{{ entry.title }}</strong>
+            <p class="explore-msg">{{ entry.message }}</p>
+            <p v-if="entry.detail" class="explore-detail text-muted">{{ entry.detail }}</p>
+          </div>
+        </div>
+        <span class="explore-time text-muted">{{ formatAgo(entry.ts) }}</span>
+      </div>
+    </template>
 
     <!-- World News -->
     <template v-if="activeTab === 'world'">
@@ -87,16 +126,23 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { usePlayerStore } from '../stores/playerStore'
+import { useEventsHubStore } from '../stores/eventsHubStore'
 import { fakeUsers } from '../data/fakeUsers'
 
 const player = usePlayerStore()
-const activeTab = ref('world')
+const eventsHub = useEventsHubStore()
+const activeTab = ref('city')
 
 const tabs = [
-  { key: 'world',    icon: '🌍', label: 'Νέα Κόσμου' },
+  { key: 'city', icon: '🚶', label: 'Πόλη' },
+  { key: 'world', icon: '🌍', label: 'Νέα Κόσμου' },
   { key: 'personal', icon: '👤', label: 'Το Ιστορικό μου' },
-  { key: 'stats',    icon: '📊', label: 'Στατιστικά' },
+  { key: 'stats', icon: '📊', label: 'Στατιστικά' },
 ]
+
+function markRead() {
+  eventsHub.markHubRead()
+}
 
 const worldNews = [
   {
@@ -204,7 +250,54 @@ function formatAgo(ts) {
   gap: var(--space-md);
 }
 
-.page-title { font-size: var(--font-size-2xl); }
+.page-title { font-size: var(--font-size-2xl); margin-bottom: 2px; }
+.page-sub { font-size: var(--font-size-xs); margin: 0 0 var(--space-sm); }
+
+.read-banner {
+  border: 1px solid var(--color-accent);
+  background: rgba(79, 195, 247, 0.08);
+}
+
+.read-banner-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.read-banner-icon { font-size: 1.25rem; }
+.read-banner-text {
+  flex: 1;
+  margin: 0;
+  font-size: var(--font-size-sm);
+  min-width: 0;
+}
+
+.city-intro-title { margin: 0 0 var(--space-xs); font-size: var(--font-size-md); }
+.city-intro-body { margin: 0; font-size: var(--font-size-xs); line-height: 1.5; }
+
+.explore-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.explore-head {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: flex-start;
+}
+
+.explore-icon { font-size: 1.75rem; line-height: 1; flex-shrink: 0; }
+.explore-title { font-size: var(--font-size-sm); display: block; }
+.explore-msg { margin: 4px 0 0; font-size: var(--font-size-sm); }
+.explore-detail { margin: 4px 0 0; font-size: var(--font-size-xs); }
+.explore-time { font-size: var(--font-size-xs); align-self: flex-end; }
+
+.kind-bad { border-left: 3px solid var(--color-danger); }
+.kind-good { border-left: 3px solid var(--color-success); }
+.kind-loot { border-left: 3px solid #ab47bc; }
+.kind-neutral { border-left: 3px solid var(--border-color); }
 
 .tab-bar {
   display: flex;

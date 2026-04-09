@@ -5,9 +5,12 @@
       :key="item.to"
       :to="item.to"
       class="nav-item"
-      :class="{ active: isActive(item.to) }"
+      :class="{ active: isRouteActive(item.to) }"
     >
-      <span class="nav-icon">{{ item.icon }}</span>
+      <span class="nav-icon-wrap">
+        <span class="nav-icon">{{ item.icon }}</span>
+        <span v-if="item.hubBadge && hubUnread" class="nav-badge-dot" aria-hidden="true" />
+      </span>
       <span class="nav-label">{{ item.label }}</span>
     </router-link>
 
@@ -24,9 +27,12 @@
         :key="item.to"
         :to="item.to"
         class="nav-item"
-        :class="{ active: isActive(item.to) }"
+        :class="{ active: isRouteActive(item.to) }"
       >
-        <span class="nav-icon">{{ item.icon }}</span>
+        <span class="nav-icon-wrap">
+          <span class="nav-icon">{{ item.icon }}</span>
+          <span v-if="item.hubBadge && hubUnread" class="nav-badge-dot" aria-hidden="true" />
+        </span>
         <span class="nav-label">{{ item.label }}</span>
       </router-link>
     </template>
@@ -52,8 +58,9 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useEventsHubStore } from '../../stores/eventsHubStore'
 
 defineProps({
   vertical: Boolean
@@ -61,12 +68,15 @@ defineProps({
 
 const route = useRoute()
 const showMore = ref(false)
+const eventsHub = useEventsHubStore()
+const hubUnread = computed(() => eventsHub.hubUnread)
 
 const mainItems = [
   { to: '/', icon: '🏠', label: 'Αρχική' },
   { to: '/crimes', icon: '🎭', label: 'Εγκλήματα' },
   { to: '/gym', icon: '💪', label: 'Γυμναστήριο' },
   { to: '/combat', icon: '⚔️', label: 'Μάχη' },
+  { to: '/events-hub', icon: '📡', label: 'Events Hub', hubBadge: true },
 ]
 
 const extraItems = [
@@ -82,7 +92,6 @@ const extraItems = [
   { to: '/job', icon: '💼', label: 'Δουλειά' },
   { to: '/property', icon: '🏘️', label: 'Ακίνητα' },
   { to: '/inventory', icon: '🎒', label: 'Τσέπη' },
-  { to: '/newspaper', icon: '📰', label: 'Εφημερίδα' },
   { to: '/kontres', icon: '🏎️', label: 'Κόντρες' },
   { to: '/shop', icon: '🛒', label: 'Κατάστημα' },
   { to: '/bounties', icon: '🎯', label: 'Συμβόλαια' },
@@ -92,7 +101,10 @@ const extraItems = [
   { to: '/settings', icon: '⚙️', label: 'Ρυθμίσεις' },
 ]
 
-function isActive(path) {
+function isRouteActive(path) {
+  if (path === '/events-hub') {
+    return route.path === '/events-hub' || route.path === '/newspaper'
+  }
   return route.path === path
 }
 </script>
@@ -125,9 +137,27 @@ function isActive(path) {
   color: var(--color-accent);
 }
 
+.nav-icon-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .nav-horizontal .nav-icon {
   font-size: 20px;
   line-height: 1;
+}
+
+.nav-badge-dot {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e53935;
+  box-shadow: 0 0 0 2px var(--bg-surface, #1a1a2e);
 }
 
 .nav-horizontal .nav-label {
@@ -166,10 +196,19 @@ function isActive(path) {
   background: rgba(79, 195, 247, 0.05);
 }
 
+.nav-vertical .nav-icon-wrap {
+  width: 24px;
+  justify-content: center;
+}
+
 .nav-vertical .nav-icon {
   font-size: 18px;
   width: 24px;
   text-align: center;
+}
+
+.nav-vertical .nav-badge-dot {
+  right: -2px;
 }
 
 .nav-vertical .nav-label {

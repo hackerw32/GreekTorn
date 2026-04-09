@@ -1,6 +1,16 @@
 <template>
   <div class="achievements-page">
-    <h2 class="page-title">🏆 Επιτεύγματα</h2>
+    <div class="page-header-row">
+      <h2 class="page-title">🏆 Επιτεύγματα</h2>
+      <button
+        type="button"
+        class="btn btn-sm btn-success claim-all-btn"
+        :disabled="achievementStore.unclaimedCount === 0"
+        @click="achievementStore.claimAllUnclaimed()"
+      >
+        Πάρτα όλα
+      </button>
+    </div>
 
     <div class="card progress-bar-card">
       <div class="progress-info">
@@ -88,7 +98,23 @@ const progressPercent = computed(() => {
   gap: var(--space-md);
 }
 
-.page-title { font-size: var(--font-size-2xl); }
+.page-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.page-title {
+  font-size: var(--font-size-2xl);
+  margin: 0;
+}
+
+.claim-all-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
 
 .progress-bar-card { padding: var(--space-sm) var(--space-md); }
 

@@ -18,6 +18,20 @@
       </div>
     </div>
 
+    <!-- Εκκρεμές ζάρι: task ολοκληρώθηκε, περιμένει ρίψη -->
+    <div v-if="pendingDiceBanner" class="card pending-dice-card">
+      <div class="pending-dice-inner">
+        <span class="pending-dice-icon" aria-hidden="true">{{ pendingDiceBanner.icon }}</span>
+        <div class="pending-dice-copy">
+          <strong class="pending-dice-title">{{ pendingDiceBanner.title }}</strong>
+          <p class="pending-dice-detail text-muted">{{ pendingDiceBanner.detail }}</p>
+        </div>
+        <router-link v-if="pendingDiceBanner.to" :to="pendingDiceBanner.to" class="btn btn-sm btn-primary pending-dice-btn">
+          {{ pendingDiceBanner.btn }}
+        </router-link>
+      </div>
+    </div>
+
     <!-- Incapacitated warning -->
     <div v-if="player.isIncapacitated" class="card status-warning">
       <div class="status-warning-content">
@@ -95,9 +109,49 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { usePlayerStore } from '../stores/playerStore'
 
 const player = usePlayerStore()
+
+/** Όταν υπάρχει αποτέλεσμα που χρειάζεται ζάρι (όχι education — κλείνει αυτόματα). */
+const pendingDiceBanner = computed(() => {
+  const r = player.pendingResult
+  if (!r) return null
+  if (r.type === 'education') return null
+
+  const icon = r.icon || '🎲'
+  const label = r.label || 'Δραστηριότητα'
+
+  if (r.type === 'crime') {
+    return {
+      icon,
+      title: 'Περίμενε ζάρι — έγκλημα',
+      detail: `Το «${label}» έχει ολοκληρωθεί. Ρίξε το ζάρι για να δεις τι έγινε.`,
+      to: '/crimes',
+      btn: 'Έγκλημα · ζάρι',
+    }
+  }
+  if (r.type === 'gym') {
+    return {
+      icon,
+      title: 'Περίμενε ζάρι — γυμναστήριο',
+      detail: `Η «${label}» τελείωσε. Ρίξε το ζάρι για τα στατιστικά σου.`,
+      to: '/gym',
+      btn: 'Γυμναστήριο · ζάρι',
+    }
+  }
+  if (r.type === 'travel') {
+    return {
+      icon: r.mode === 'plane' ? '✈️' : '🚆',
+      title: 'Περίμενε ζάρι — ταξίδι',
+      detail: 'Έφτασες — χρειάζεται ρίψη ζαριού για την άφιξη. (Αν δεν φαίνεται παράθυρο, πήγαινε στο Ταξίδι.)',
+      to: '/travel',
+      btn: 'Ταξίδι · ζάρι',
+    }
+  }
+  return null
+})
 
 function formatCash(amount) {
   return new Intl.NumberFormat('el-GR').format(Math.floor(amount))
@@ -133,6 +187,58 @@ function formatTimeAgo(timestamp) {
 .welcome-section h2 {
   font-size: var(--font-size-xl);
   margin-bottom: var(--space-xs);
+}
+
+.pending-dice-card {
+  border: 2px solid var(--color-warning, #f39c12);
+  background: linear-gradient(135deg, rgba(243, 156, 18, 0.12), var(--bg-surface));
+  box-shadow: 0 0 0 1px rgba(243, 156, 18, 0.25);
+}
+
+.pending-dice-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+}
+
+.pending-dice-icon {
+  font-size: 2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.pending-dice-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.pending-dice-title {
+  display: block;
+  font-size: var(--font-size-sm);
+  margin-bottom: 4px;
+  color: var(--color-warning, #f39c12);
+}
+
+.pending-dice-detail {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  line-height: 1.45;
+}
+
+.pending-dice-btn {
+  flex-shrink: 0;
+  align-self: center;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .pending-dice-inner {
+    flex-wrap: wrap;
+  }
+  .pending-dice-btn {
+    width: 100%;
+    text-align: center;
+  }
 }
 
 .player-summary {

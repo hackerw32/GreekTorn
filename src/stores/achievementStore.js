@@ -129,6 +129,35 @@ export const useAchievementStore = defineStore('achievement', {
       return true
     },
 
+    /** Παίρνει με ένα κλικ όλα τα ξεκλείδωτα επιτεύγματα που δεν έχουν ήδη πληρωθεί. */
+    claimAllUnclaimed() {
+      const toClaim = this.unlocked.filter(id => !this.claimedSet.has(id))
+      if (!toClaim.length) return 0
+
+      const player = usePlayerStore()
+      const gameStore = useGameStore()
+      let total = 0
+
+      for (const id of toClaim) {
+        const achievement = achievements.find(a => a.id === id)
+        if (!achievement) continue
+        const cash = achievement.reward?.cash || 0
+        if (cash) {
+          total += cash
+          player.addCash(cash)
+        }
+        this.claimed.push(id)
+      }
+
+      gameStore.addNotification(
+        `Έλαβες συνολικά €${total.toLocaleString('el-GR')} από ${toClaim.length} επιτεύγματα!`,
+        'cash'
+      )
+      player.logActivity(`🏆 Μαζική είσπραξη: +€${total} (${toClaim.length} επιτεύγματα)`, 'cash')
+      gameStore.saveGame()
+      return toClaim.length
+    },
+
     getSerializable() {
       return {
         unlocked: [...this.unlocked],

@@ -74,13 +74,15 @@
             <span class="stat-chip-label">Τσέπη (μαζί σου)</span>
             <span class="stat-chip-val text-mono">{{ pocketUsed }} / {{ pocketMax }} τεμάχια</span>
           </div>
-          <div class="stat-chip">
-            <span class="stat-chip-label">Αποθήκη στο σπίτι</span>
-            <span class="stat-chip-val text-mono">{{ stashUsage(instance) }} / {{ propertyMeta(instance).itemCapacity }} πράγματα</span>
-          </div>
-          <div class="stat-chip stat-chip-wide">
-            <span class="stat-chip-label">Πόλη</span>
-            <span class="stat-chip-val">{{ locationName(instance.locationId) }}</span>
+          <div class="stat-chip-pair">
+            <div class="stat-chip">
+              <span class="stat-chip-label">Αποθήκη στο σπίτι</span>
+              <span class="stat-chip-val text-mono">{{ stashUsage(instance) }} / {{ propertyMeta(instance).itemCapacity }} πράγματα</span>
+            </div>
+            <div class="stat-chip">
+              <span class="stat-chip-label">Πόλη</span>
+              <span class="stat-chip-val">{{ locationName(instance.locationId) }}</span>
+            </div>
           </div>
         </div>
 
@@ -438,8 +440,17 @@ function formatCash(amount) {
   font-size: var(--font-size-xs);
 }
 
-.stat-chip-wide {
-  grid-column: 1 / -1;
+.stat-chip-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+@media (max-width: 360px) {
+  .stat-chip-pair {
+    grid-template-columns: 1fr;
+  }
 }
 
 .stat-chip-label {
