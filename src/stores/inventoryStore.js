@@ -51,8 +51,8 @@ export const useInventoryStore = defineStore('inventory', {
         return { ok: false, message: 'Μη έγκυρη ποσότητα.' }
       }
 
-      if (this.totalItems + quantity > 20) {
-        return { ok: false, message: 'Το inventory σου είναι γεμάτο (Max 20)!' }
+      if (this.totalItems + quantity > this.maxSlots) {
+        return { ok: false, message: `Η τσέπη σου είναι γεμάτη (όριο ${this.maxSlots} τεμάχια μαζί σου).` }
       }
 
       const existing = this.items.find(i => i.itemId === itemId)

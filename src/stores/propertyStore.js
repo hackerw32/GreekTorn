@@ -392,7 +392,7 @@ export const usePropertyStore = defineStore('property', {
       const { instance, property } = bundle
       const used = sumStashItems(instance.stash)
       if (used + qty > property.itemCapacity) {
-        gameStore.addNotification('Not enough space in Stash.', 'danger')
+        gameStore.addNotification('Η αποθήκη του σπιτιού είναι γεμάτη.', 'danger')
         return false
       }
 
@@ -429,15 +429,15 @@ export const usePropertyStore = defineStore('property', {
         return false
       }
 
-      const pocketFree = 20 - inventoryStore.totalItems
+      const pocketFree = inventoryStore.maxSlots - inventoryStore.totalItems
       if (qty > pocketFree) {
-        gameStore.addNotification('Not enough space in Pocket.', 'danger')
+        gameStore.addNotification('Η τσέπη σου είναι γεμάτη — άδειασε λίγο χώρο.', 'danger')
         return false
       }
 
       const addResult = inventoryStore.addItem(itemId, qty)
       if (addResult?.ok === false) {
-        gameStore.addNotification(addResult.message || 'Not enough space in Pocket.', 'danger')
+        gameStore.addNotification(addResult.message || 'Η τσέπη σου είναι γεμάτη.', 'danger')
         return false
       }
 
@@ -487,7 +487,7 @@ export const usePropertyStore = defineStore('property', {
       const targetUsed = sumStashItems(toBundle.instance.stash)
       const targetFree = toBundle.property.itemCapacity - targetUsed
       if (requestedTotal > targetFree) {
-        gameStore.addNotification('Not enough space in Stash.', 'danger')
+        gameStore.addNotification('Η αποθήκη του σπιτιού είναι γεμάτη.', 'danger')
         return { ok: false }
       }
 

@@ -65,10 +65,23 @@
           </div>
         </div>
 
-        <div class="property-stats">
-          <span class="text-mono">Vault: €{{ formatCash(instance.vaultCash) }} / €{{ formatCash(propertyMeta(instance).vaultCapacity) }}</span>
-          <span class="text-mono">Items: {{ stashUsage(instance) }}/{{ propertyMeta(instance).itemCapacity }}</span>
-          <span class="text-muted">Τοποθεσία: {{ locationName(instance.locationId) }}</span>
+        <div class="property-stats property-stats-grid">
+          <div class="stat-chip">
+            <span class="stat-chip-label">Χρηματοκιβώτιο</span>
+            <span class="stat-chip-val text-mono">€{{ formatCash(instance.vaultCash) }} / €{{ formatCash(propertyMeta(instance).vaultCapacity) }}</span>
+          </div>
+          <div class="stat-chip">
+            <span class="stat-chip-label">Τσέπη (μαζί σου)</span>
+            <span class="stat-chip-val text-mono">{{ pocketUsed }} / {{ pocketMax }} τεμάχια</span>
+          </div>
+          <div class="stat-chip">
+            <span class="stat-chip-label">Αποθήκη στο σπίτι</span>
+            <span class="stat-chip-val text-mono">{{ stashUsage(instance) }} / {{ propertyMeta(instance).itemCapacity }} πράγματα</span>
+          </div>
+          <div class="stat-chip stat-chip-wide">
+            <span class="stat-chip-label">Πόλη</span>
+            <span class="stat-chip-val">{{ locationName(instance.locationId) }}</span>
+          </div>
         </div>
 
         <div class="actions">
@@ -81,56 +94,160 @@
           </button>
         </div>
 
-        <details class="manage-panel">
-          <summary>Διαχείριση Vault / Stash / Μεταφορική</summary>
+        <div class="manage-panel">
+          <p class="manage-intro">
+            Εδώ ρυθμίζεις αυτό το σπίτι. Κάθε κουτί έχει <strong>έναν απλό σκοπό</strong> — διάβασε τον τίτλο και τη γραμμή από κάτω.
+          </p>
 
-          <div class="section">
-            <h4>🔐 Vault</h4>
-            <div class="inline-row">
-              <input v-model.number="vaultInputs[instance.instanceId]" type="number" class="input" min="1" placeholder="Ποσό..." />
-              <button class="btn btn-sm btn-primary" @click="depositVault(instance.instanceId)">Κατάθεση</button>
-              <button class="btn btn-sm btn-outline" @click="withdrawVault(instance.instanceId)">Ανάληψη</button>
+          <!-- Λεφτά -->
+          <section class="manage-block manage-block-money">
+            <div class="manage-block-head">
+              <span class="manage-emoji">💰</span>
+              <div>
+                <h3 class="manage-title">Λεφτά μέσα στο σπίτι</h3>
+                <p class="manage-sub">
+                  Βάζεις εδώ μετρητά για ασφάλεια (μέχρι το όριο του χρηματοκιβωτίου).
+                  <strong>Κατάθεση</strong> = από την τσέπη σου → στο σπίτι.
+                  <strong>Ανάληψη</strong> = από το σπίτι → πίσω στην τσέπη σου.
+                </p>
+              </div>
             </div>
-          </div>
+            <div class="manage-steps">
+              <label class="field-label" :for="'vault-amt-' + instance.instanceId">Πόσα ευρώ;</label>
+              <div class="manage-actions-row">
+                <input
+                  :id="'vault-amt-' + instance.instanceId"
+                  v-model.number="vaultInputs[instance.instanceId]"
+                  type="number"
+                  class="input input-grow"
+                  min="1"
+                  placeholder="π.χ. 1000"
+                />
+                <button type="button" class="btn btn-primary" @click="depositVault(instance.instanceId)">
+                  ⬇️ Κατάθεση στο σπίτι
+                </button>
+                <button type="button" class="btn btn-outline" @click="withdrawVault(instance.instanceId)">
+                  ⬆️ Ανάληψη στην τσέπη
+                </button>
+              </div>
+            </div>
+          </section>
 
-          <div class="section">
-            <h4>📦 Stash</h4>
-            <div class="inline-row">
-              <select v-model="stashItemInputs[instance.instanceId]" class="input">
-                <option disabled value="">Επίλεξε item...</option>
-                <option v-for="it in pocketItems" :key="it.itemId" :value="it.itemId">
-                  {{ itemLabel(it.itemId) }} (Pocket: {{ it.quantity }})
-                </option>
-              </select>
-              <input v-model.number="stashQtyInputs[instance.instanceId]" type="number" class="input" min="1" placeholder="Ποσότητα..." />
-              <button class="btn btn-sm btn-primary" @click="depositStash(instance.instanceId)">Κατάθεση σε Stash</button>
+          <!-- Πράγματα -->
+          <section class="manage-block manage-block-stash">
+            <div class="manage-block-head">
+              <span class="manage-emoji">📦</span>
+              <div>
+                <h3 class="manage-title">Πράγματα: τσέπη ↔ αποθήκη</h3>
+                <p class="manage-sub">
+                  Η <strong>τσέπη</strong> είναι ό,τι κουβαλάς μαζί (μέχρι {{ pocketMax }} τεμάχια — τώρα {{ pocketUsed }}).
+                  Η <strong>αποθήκη</strong> είναι ο χώρος μέσα σε αυτό το σπίτι (βλ. πάνω «Αποθήκη στο σπίτι»).
+                </p>
+              </div>
             </div>
 
-            <div class="stash-list">
-              <div v-for="entry in stashEntries(instance)" :key="`${instance.instanceId}_${entry.itemId}`" class="stash-row">
-                <span>{{ itemLabel(entry.itemId) }} x{{ entry.qty }}</span>
-                <div class="inline-row">
-                  <input v-model.number="withdrawQtyInputs[`${instance.instanceId}_${entry.itemId}`]" type="number" class="input small" min="1" :max="entry.qty" placeholder="Qty" />
-                  <button class="btn btn-sm btn-outline" @click="withdrawStash(instance.instanceId, entry.itemId)">Ανάληψη στην Τσέπη</button>
+            <div class="manage-subsection">
+              <h4 class="step-label"><span class="step-num">1</span> Από την τσέπη → στην αποθήκη του σπιτιού</h4>
+              <div class="manage-steps">
+                <label class="field-label" :for="'stash-sel-' + instance.instanceId">Διάλεξε τι κρατάς στην τσέπη</label>
+                <select :id="'stash-sel-' + instance.instanceId" v-model="stashItemInputs[instance.instanceId]" class="input input-full">
+                  <option disabled value="">— Τι θέλεις να αφήσεις στο σπίτι; —</option>
+                  <option v-for="it in pocketItems" :key="it.itemId" :value="it.itemId">
+                    {{ itemLabel(it.itemId) }} (στην τσέπη: {{ it.quantity }})
+                  </option>
+                </select>
+                <label class="field-label" :for="'stash-qty-' + instance.instanceId">Πόσα τεμάχια;</label>
+                <div class="manage-actions-row">
+                  <input
+                    :id="'stash-qty-' + instance.instanceId"
+                    v-model.number="stashQtyInputs[instance.instanceId]"
+                    type="number"
+                    class="input input-narrow"
+                    min="1"
+                    placeholder="αριθμός"
+                  />
+                  <button type="button" class="btn btn-primary btn-wide" @click="depositStash(instance.instanceId)">
+                    Μετακίνηση στο σπίτι
+                  </button>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div class="section">
-            <h4>🚚 Μεταφορική</h4>
-            <p class="text-muted">Κόστος: €500. Σε ζάρι 1 χάνεται 25% των μεταφερόμενων αντικειμένων.</p>
-            <div class="inline-row">
-              <select v-model="moveTargetByInstance[instance.instanceId]" class="input">
-                <option disabled value="">Επιλογή προορισμού...</option>
-                <option v-for="other in otherInstances(instance.instanceId)" :key="other.instanceId" :value="other.instanceId">
-                  {{ propertyName(other) }}
-                </option>
-              </select>
-              <button class="btn btn-sm btn-primary" @click="moveAllStash(instance.instanceId)">Μεταφορική</button>
+            <div class="manage-subsection">
+              <h4 class="step-label"><span class="step-num">2</span> Από την αποθήκη → πίσω στην τσέπη</h4>
+              <p v-if="!stashEntries(instance).length" class="empty-stash-msg text-muted">
+                Δεν έχεις τίποτα αποθηκεμένο εδώ ακόμα. Χρησιμοποίησε το βήμα 1 πάνω.
+              </p>
+              <ul v-else class="stash-list-simple">
+                <li v-for="entry in stashEntries(instance)" :key="`${instance.instanceId}_${entry.itemId}`" class="stash-card">
+                  <div class="stash-card-info">
+                    <span class="stash-card-name">{{ itemLabel(entry.itemId) }}</span>
+                    <span class="stash-card-qty text-muted">Στο σπίτι: <strong>{{ entry.qty }}</strong></span>
+                  </div>
+                  <div class="stash-card-actions">
+                    <label class="field-label sr-only" :for="'wd-qty-' + instance.instanceId + '-' + entry.itemId">Πόσα να πάρεις</label>
+                    <input
+                      :id="'wd-qty-' + instance.instanceId + '-' + entry.itemId"
+                      v-model.number="withdrawQtyInputs[`${instance.instanceId}_${entry.itemId}`]"
+                      type="number"
+                      class="input input-narrow"
+                      min="1"
+                      :max="entry.qty"
+                      placeholder="πόσα"
+                    />
+                    <button type="button" class="btn btn-outline btn-take" @click="withdrawStash(instance.instanceId, entry.itemId)">
+                      Πάρε στην τσέπη
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-ghost btn-all"
+                      @click="withdrawAllToPocket(instance.instanceId, entry.itemId, entry.qty)"
+                    >
+                      Όλα ({{ entry.qty }})
+                    </button>
+                  </div>
+                </li>
+              </ul>
             </div>
-          </div>
-        </details>
+          </section>
+
+          <!-- Μεταφορική -->
+          <section class="manage-block manage-block-move">
+            <div class="manage-block-head">
+              <span class="manage-emoji">🚚</span>
+              <div>
+                <h3 class="manage-title">Μετακόμιση πραγμάτων σε άλλο σπίτι</h3>
+                <p class="manage-sub">
+                  Μεταφέρει <strong>όλα</strong> όσα έχεις στην <strong>αποθήκη αυτού</strong> του σπιτιού προς άλλο δικό σου σπίτι.
+                  Κόστος <strong>€500</strong>.
+                  Ρίχνεις ζάρι: αν βγει <strong>1</strong>, χάνεις το <strong>25%</strong> των πραγμάτων που στέλνεις.
+                </p>
+              </div>
+            </div>
+            <div class="manage-steps">
+              <label class="field-label" :for="'move-to-' + instance.instanceId">Ποιο σπίτι παίρνει τα πράγματα;</label>
+              <div class="manage-actions-row">
+                <select :id="'move-to-' + instance.instanceId" v-model="moveTargetByInstance[instance.instanceId]" class="input input-grow">
+                  <option disabled value="">— Διάλεξε άλλο ακίνητο —</option>
+                  <option v-for="other in otherInstances(instance.instanceId)" :key="other.instanceId" :value="other.instanceId">
+                    {{ propertyName(other) }} ({{ locationName(other.locationId) }})
+                  </option>
+                </select>
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  :disabled="!otherInstances(instance.instanceId).length"
+                  @click="moveAllStash(instance.instanceId)"
+                >
+                  Στείλε με μεταφορική
+                </button>
+              </div>
+              <p v-if="!otherInstances(instance.instanceId).length" class="text-muted manage-hint">
+                Χρειάζεσαι τουλάχιστον δύο σπίτια για να εμφανιστεί προορισμός εδώ.
+              </p>
+            </div>
+          </section>
+        </div>
       </div>
     </div>
   </div>
@@ -161,6 +278,9 @@ const withdrawQtyInputs = ref({})
 const moveTargetByInstance = ref({})
 
 const pocketItems = computed(() => inventoryStore.items.filter(i => i.quantity > 0))
+
+const pocketUsed = computed(() => inventoryStore.totalItems)
+const pocketMax = computed(() => inventoryStore.maxSlots)
 
 function propertyMeta(instance) {
   return getPropertyById(instance.propertyId) || {}
@@ -202,7 +322,7 @@ function sellProperty(instanceId, propertyNameLabel) {
 }
 
 function endLease(instanceId) {
-  if (!confirm('Θέλεις σίγουρα να τερματίσεις την ενοικίαση; Θα χαθούν stash/vault.')) return
+  if (!confirm('Θέλεις σίγουρα να τερματίσεις την ενοικίαση; Θα χαθούν τα λεφτά στο χρηματοκιβώτιο και η αποθήκη αυτού του σπιτιού.')) return
   propertyStore.endLease(instanceId)
 }
 
@@ -232,7 +352,7 @@ function depositStash(instanceId) {
   const itemId = stashItemInputs.value[instanceId]
   const qty = Number(stashQtyInputs.value[instanceId] || 0)
   if (!itemId || qty <= 0) {
-    gameStore.addNotification('Επίλεξε item και έγκυρη ποσότητα.', 'danger')
+    gameStore.addNotification('Διάλεξε αντικείμενο από την τσέπη και βάλε ποσότητα μεγαλύτερη από 0.', 'danger')
     return
   }
   if (propertyStore.depositToStash(instanceId, itemId, qty)) {
@@ -250,6 +370,12 @@ function withdrawStash(instanceId, itemId) {
   if (propertyStore.withdrawFromStash(instanceId, itemId, qty)) {
     withdrawQtyInputs.value[key] = 0
   }
+}
+
+function withdrawAllToPocket(instanceId, itemId, maxQty) {
+  const key = `${instanceId}_${itemId}`
+  withdrawQtyInputs.value[key] = maxQty
+  withdrawStash(instanceId, itemId)
 }
 
 function otherInstances(instanceId) {
@@ -294,15 +420,251 @@ function formatCash(amount) {
 
 .property-list { display: flex; flex-direction: column; gap: var(--space-sm); }
 .property-card.active { border-color: var(--color-warning); }
-.property-stats { display: flex; gap: var(--space-sm); flex-wrap: wrap; margin-top: var(--space-xs); align-items: center; font-size: var(--font-size-sm); }
+.property-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+}
+
+.stat-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-sm);
+  background: var(--bg-surface-raised, rgba(255, 255, 255, 0.04));
+  border-radius: var(--border-radius-md, 8px);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  font-size: var(--font-size-xs);
+}
+
+.stat-chip-wide {
+  grid-column: 1 / -1;
+}
+
+.stat-chip-label {
+  color: var(--text-secondary, var(--text-muted));
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.stat-chip-val {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
 .actions { display: flex; gap: var(--space-sm); margin-top: var(--space-sm); flex-wrap: wrap; }
 .badges { display: flex; gap: var(--space-xs); flex-wrap: wrap; }
 
-.manage-panel { margin-top: var(--space-sm); }
-.manage-panel summary { cursor: pointer; font-weight: var(--font-weight-medium); }
-.section { margin-top: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-xs); }
-.inline-row { display: flex; gap: var(--space-sm); flex-wrap: wrap; align-items: center; }
-.stash-list { display: flex; flex-direction: column; gap: var(--space-xs); }
-.stash-row { display: flex; justify-content: space-between; gap: var(--space-sm); flex-wrap: wrap; align-items: center; padding: 6px 0; border-bottom: 1px dashed var(--color-border); }
-.input.small { max-width: 80px; }
+.manage-panel {
+  margin-top: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.manage-intro {
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin: 0;
+  padding: var(--space-sm) var(--space-md);
+  background: rgba(79, 195, 247, 0.08);
+  border-radius: var(--border-radius-md, 8px);
+  border-left: 4px solid var(--color-accent, #42a5f5);
+}
+
+.manage-block {
+  padding: var(--space-md);
+  border-radius: var(--border-radius-md, 10px);
+  border: 1px solid var(--border-color);
+  background: var(--bg-surface, var(--color-surface-2));
+}
+
+.manage-block-money { border-color: rgba(255, 193, 7, 0.4); }
+.manage-block-stash { border-color: rgba(129, 199, 132, 0.45); }
+.manage-block-move { border-color: rgba(239, 83, 80, 0.35); }
+
+.manage-block-head {
+  display: flex;
+  gap: var(--space-md);
+  align-items: flex-start;
+  margin-bottom: var(--space-md);
+}
+
+.manage-emoji {
+  font-size: 2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.manage-title {
+  margin: 0 0 var(--space-xs);
+  font-size: var(--font-size-lg);
+  font-weight: 800;
+}
+
+.manage-sub {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.manage-subsection {
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px dashed var(--border-color);
+}
+
+.manage-subsection:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.step-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin: 0 0 var(--space-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: var(--color-accent, #42a5f5);
+  color: var(--text-on-primary, #fff);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.manage-steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.field-label {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-top: var(--space-xs);
+}
+
+.manage-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.input-grow { flex: 1; min-width: 120px; }
+.input-full { width: 100%; }
+.input-narrow {
+  width: 88px;
+  min-width: 72px;
+}
+
+.btn-wide {
+  flex: 1;
+  min-width: 160px;
+}
+
+.btn-take {
+  font-weight: 700;
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1px dashed var(--border-color);
+  color: var(--text-secondary);
+}
+
+.btn-all {
+  font-size: var(--font-size-xs);
+}
+
+.empty-stash-msg {
+  margin: 0;
+  padding: var(--space-sm);
+  font-size: var(--font-size-sm);
+}
+
+.stash-list-simple {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.stash-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-surface-raised, rgba(0, 0, 0, 0.2));
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border-color);
+}
+
+@media (min-width: 520px) {
+  .stash-card {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.stash-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.stash-card-name {
+  font-weight: 700;
+  font-size: var(--font-size-sm);
+}
+
+.stash-card-qty {
+  font-size: var(--font-size-xs);
+}
+
+.stash-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.manage-hint {
+  margin: var(--space-xs) 0 0;
+  font-size: var(--font-size-xs);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 </style>

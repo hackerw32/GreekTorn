@@ -125,12 +125,10 @@
 import { ref, computed } from 'vue'
 import { usePlayerStore } from '../stores/playerStore'
 import { useInventoryStore } from '../stores/inventoryStore'
-import { useGameStore } from '../stores/gameStore'
 import { getBuyableItems } from '../data/items'
 
 const player = usePlayerStore()
 const inventory = useInventoryStore()
-const gameStore = useGameStore()
 
 const mode = ref('market')
 const marketCat = ref('all')
@@ -173,7 +171,6 @@ function formatCash(n) {
 function buy(item) {
   if (player.cash < item.buyPrice || player.level < item.levelRequired) return
   inventory.buyItem(item.id)
-  gameStore.addNotification(`Αγόρασες ${item.name}!`, 'success')
 }
 </script>
 
