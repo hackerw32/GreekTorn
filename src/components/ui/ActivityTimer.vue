@@ -18,22 +18,97 @@
     <button
       type="button"
       class="ff-btn"
-      :class="{ active: player.activityTimeScale >= 3 }"
-      title="Γρήγορη προώθηση χρόνου (x3) μόνο γι' αυτή τη δραστηριότητα. Πάτα ξανά για κανονικό ρολόι."
+      :class="{ active: player.activityTimeScale >= 3, 'is-locked': player.activityTimeScale >= 3 }"
+      :disabled="player.activityTimeScale >= 3"
+      title="Γρήγορη προώθηση x3 (μία φορά — μετά από χορηγούμενη διαφήμιση 5 δευτ.)"
       aria-label="Γρήγορη προώθηση χρόνου"
-      @click.stop="player.toggleActivityFastForward()"
+      @click.stop="onFastForwardClick"
     >
       >>
     </button>
   </div>
+
+  <Teleport to="body">
+    <Transition name="fade">
+      <div v-if="ffAdVisible" class="ff-ad-overlay">
+        <div class="ff-ad-timer">
+          <span v-if="ffAdCountdown > 0">Χορηγία: {{ ffAdCountdown }}…</span>
+          <button v-else type="button" class="ff-close-ad-btn" @click="finishFastForwardAd">❌</button>
+        </div>
+
+        <div class="ff-ad-content">
+          <div class="ff-ad-sponsor">ΧΟΡΗΓΟΥΜΕΝΟ</div>
+          <div class="ff-ad-icon">{{ currentFfAd.icon }}</div>
+          <h2 class="ff-ad-title">{{ currentFfAd.title }}</h2>
+          <p class="ff-ad-text">{{ currentFfAd.text }}</p>
+          <div class="ff-ad-progress-bar">
+            <div class="ff-ad-progress-fill" :style="{ width: (ffAdCountdown / 5) * 100 + '%' }" />
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup>
+import { ref, watch, onUnmounted } from 'vue'
 import { usePlayerStore } from '../../stores/playerStore'
 import { useRouter } from 'vue-router'
+import { FAKE_ADS } from '../../data/fakeAds'
 
 const player = usePlayerStore()
 const router = useRouter()
+
+const ffAdVisible = ref(false)
+const ffAdCountdown = ref(5)
+const currentFfAd = ref(FAKE_ADS[0])
+let ffAdTimer = null
+
+function clearFfTimer() {
+  if (ffAdTimer) {
+    clearInterval(ffAdTimer)
+    ffAdTimer = null
+  }
+}
+
+function onFastForwardClick() {
+  if (!player.activeActivity || player.pendingResult) return
+  if (player.activityTimeScale >= 3) return
+
+  clearFfTimer()
+  currentFfAd.value = FAKE_ADS[Math.floor(Math.random() * FAKE_ADS.length)]
+  ffAdVisible.value = true
+  ffAdCountdown.value = 5
+
+  ffAdTimer = setInterval(() => {
+    ffAdCountdown.value--
+    if (ffAdCountdown.value <= 0) {
+      clearFfTimer()
+    }
+  }, 1000)
+}
+
+function finishFastForwardAd() {
+  clearFfTimer()
+  ffAdVisible.value = false
+  if (player.activeActivity && !player.pendingResult) {
+    player.enableActivityFastForward()
+  }
+}
+
+watch(
+  () => player.activeActivity,
+  (act) => {
+    if (!act && ffAdVisible.value) {
+      clearFfTimer()
+      ffAdVisible.value = false
+    }
+  }
+)
+
+onUnmounted(() => {
+  clearFfTimer()
+})
 
 function formatTime(ms) {
   if (ms <= 0) return '0:00'
@@ -91,7 +166,7 @@ function navigateToActivity() {
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
-.ff-btn:hover {
+.ff-btn:hover:not(:disabled) {
   background: var(--bg-hover);
   color: var(--color-accent);
   border-color: var(--color-accent);
@@ -101,6 +176,11 @@ function navigateToActivity() {
   background: rgba(76, 175, 80, 0.2);
   border-color: var(--color-success);
   color: var(--color-success);
+}
+
+.ff-btn.is-locked {
+  cursor: default;
+  opacity: 0.85;
 }
 
 .ff-badge {
@@ -155,5 +235,98 @@ function navigateToActivity() {
 
 .activity-bar-fill.is-fast {
   background: linear-gradient(90deg, var(--color-accent), var(--color-success));
+}
+
+/* —— Fake ad overlay (ίδιο στυλ με Daily Bonus) —— */
+.ff-ad-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  z-index: 4000;
+  backdrop-filter: blur(5px);
+}
+
+.ff-ad-timer {
+  position: absolute;
+  top: 30px;
+  right: 30px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  color: #eee;
+}
+
+.ff-close-ad-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.ff-ad-content {
+  text-align: center;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.ff-ad-sponsor {
+  font-size: 10px;
+  color: #666;
+  letter-spacing: 2px;
+}
+
+.ff-ad-icon {
+  font-size: 80px;
+  line-height: 1;
+}
+
+.ff-ad-title {
+  color: #f1c40f;
+  margin: 0;
+  font-size: var(--font-size-xl);
+}
+
+.ff-ad-text {
+  color: #ccc;
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.ff-ad-progress-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.ff-ad-progress-fill {
+  height: 100%;
+  background: var(--color-primary, #42a5f5);
+  transition: width 0.1s linear;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

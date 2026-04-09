@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { locations, getLocationById, getTravelTime } from '../data/locations'
 import { usePlayerStore } from './playerStore'
 import { useGameStore } from './gameStore'
+import { useMissionStore } from './missionStore'
 
 // Cost per minute of train travel (€)
 const COST_PER_MINUTE = 25
@@ -124,6 +125,7 @@ export const useTravelStore = defineStore('travel', {
 
       player.logActivity(`✈️ Έφτασες: ${name}`, 'info')
       gameStore.addNotification(`Καλώς ήρθες στ${getArticle(name)} ${name}!`, 'success')
+      useMissionStore().updateProgress('travel', 1)
       gameStore.saveGame()
     },
 

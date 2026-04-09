@@ -130,6 +130,7 @@
       :opponent="selectedOpponent"
       :is-pvp="mode === 'pvp'"
       @fight-end="onFightEnd"
+      @fight-flee="onFightFlee"
     />
 
     <BattleEquipPopup :open="showEquipPopup" @close="showEquipPopup = false" />
@@ -137,7 +138,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePlayerStore } from '../stores/playerStore'
 import { useCombatStore } from '../stores/combatStore'
@@ -151,6 +152,13 @@ import { fakeUsers, pvpTierLabels } from '../data/fakeUsers'
 import { calculateHospitalTime } from '../engine/formulas'
 import CombatArena from '../components/combat/CombatArena.vue'
 import BattleEquipPopup from '../components/combat/BattleEquipPopup.vue'
+import {
+  persistCombatSession,
+  clearCombatSession,
+  readCombatSession,
+  markCombatInterrupted,
+  consumeCombatInterruptedFlag,
+} from '../utils/combatSession'
 
 const player = usePlayerStore()
 const combatStore = useCombatStore()
@@ -165,6 +173,97 @@ const screen = ref('mode')  // mode | select | fight
 const mode = ref('solo')    // solo | pvp
 const selectedOpponent = ref(null)
 const showEquipPopup = ref(false)
+
+const DEFEAT_CASH_FRACTION = 0.03
+
+function onBeforeUnloadHandler() {
+  if (screen.value === 'fight' && selectedOpponent.value) {
+    markCombatInterrupted()
+  }
+}
+
+function snapshotCombatSession() {
+  const o = selectedOpponent.value
+  if (!o) return
+  persistCombatSession({
+    mode: mode.value,
+    isPvp: mode.value === 'pvp',
+    opponentId: o.id,
+    opponentLevel: o.level,
+    opponentDifficulty: o.difficulty ?? null,
+    opponentName: o.nickname || o.name,
+    energyCost: o.energyCost,
+  })
+}
+
+/** Normal ήττα / refresh mid-fight: νοσοκομείο + 3% μετρητά (αν έχει). */
+function applyCombatDefeat(pending, reason = 'fight') {
+  const cashLost = takeDefeatCashLoss()
+
+  player.resources.hp.current = 0
+  const hospitalTime = calculateHospitalTime(0, player.resources.hp.max, pending.opponentLevel)
+  player.setStatus('hospital', hospitalTime)
+
+  const label = reason === 'reload' ? 'Έκλεισες τη μάχη (refresh) — ' : ''
+  player.logActivity(
+    `⚔️ ${pending.isPvp ? 'PVP ' : ''}Ήττα vs ${pending.opponentName} — Νοσοκομείο${cashLost ? ` · -€${cashLost}` : ''}`,
+    'danger'
+  )
+  let msg = `${label}Ήττα! Νοσοκομείο…`
+  if (cashLost > 0) msg += ` Έχασες €${cashLost} (3%).`
+  gameStore.addNotification(msg, 'hospital')
+
+  combatStore.recordHistory({
+    opponentId: pending.opponentId,
+    isPvp: pending.isPvp,
+    won: false,
+  })
+
+  gameStore.saveGame()
+  setTimeout(() => router.push('/hospital'), 400)
+}
+
+function takeDefeatCashLoss() {
+  if (player.cash <= 0) return 0
+  const loss = Math.floor(player.cash * DEFEAT_CASH_FRACTION)
+  if (loss <= 0) return 0
+  player.removeCash(loss)
+  return loss
+}
+
+function applyFleeCosts() {
+  const n = player.resources.nerve
+  const h = player.resources.happiness
+  const nerveLoss = Math.floor(n.current * 0.25)
+  const happyLoss = Math.floor(h.current * 0.25)
+  if (nerveLoss > 0) player.modifyResource('nerve', -nerveLoss)
+  if (happyLoss > 0) player.modifyResource('happiness', -happyLoss)
+  return { nerveLoss, happyLoss }
+}
+
+watch(screen, s => {
+  if (s === 'fight' && selectedOpponent.value) {
+    snapshotCombatSession()
+    window.addEventListener('beforeunload', onBeforeUnloadHandler)
+  } else {
+    window.removeEventListener('beforeunload', onBeforeUnloadHandler)
+  }
+})
+
+onMounted(() => {
+  const interrupted = consumeCombatInterruptedFlag()
+  const pending = readCombatSession()
+  if (pending && interrupted) {
+    clearCombatSession()
+    applyCombatDefeat(pending, 'reload')
+  } else if (pending && !interrupted) {
+    clearCombatSession()
+  }
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', onBeforeUnloadHandler)
+})
 
 const difficulties = [
   { key: 'easy',      ...difficultyLabels.easy },
@@ -201,7 +300,34 @@ function startFight(opponent) {
   screen.value = 'fight'
 }
 
+function onFightFlee() {
+  const opp = selectedOpponent.value
+  clearCombatSession()
+  const { nerveLoss, happyLoss } = applyFleeCosts()
+
+  combatStore.recordHistory({
+    opponentId: opp?.id,
+    isPvp: mode.value === 'pvp',
+    won: false,
+  })
+
+  player.logActivity(
+    `🏃 Έφυγες από τη μάχη vs ${opp?.nickname || opp?.name || '?'} (Θράσος -${nerveLoss}, Κέφι -${happyLoss})`,
+    'warning'
+  )
+  gameStore.addNotification(
+    "Βάλ'το στα πόδια! -" + nerveLoss + ' Θράσος, -' + happyLoss + ' Κέφι. Η ζωή σου έμεινε ίδια.',
+    'warning'
+  )
+
+  selectedOpponent.value = null
+  screen.value = 'select'
+  gameStore.saveGame()
+}
+
 function onFightEnd(result) {
+  clearCombatSession()
+
   if (result.won) {
     player.addCash(result.cashReward)
     player.addXP(result.xpReward)
@@ -222,20 +348,26 @@ function onFightEnd(result) {
     )
 
     // Track missions & achievements
-    missionStore.onCombatWin(result.opponentId, selectedOpponent.value.difficulty || null, result.isPvp)
-    missionStore.onEarnCash(result.cashReward)
+    missionStore.updateProgress('combat', 1, {
+      difficulty: selectedOpponent.value.difficulty || null,
+      isPvp: result.isPvp,
+    })
+    missionStore.updateProgress('earn', result.cashReward)
     factionStore.addContribution(1)
     achievementStore.checkAchievements()
   } else {
+    const cashLost = takeDefeatCashLoss()
     player.resources.hp.current = 0
     const hospitalTime = calculateHospitalTime(0, player.resources.hp.max, selectedOpponent.value.level)
     player.setStatus('hospital', hospitalTime)
 
     player.logActivity(
-      `⚔️ ${result.isPvp ? 'PVP' : ''} Ήττα vs ${result.opponentName} — Νοσοκομείο`,
+      `⚔️ ${result.isPvp ? 'PVP' : ''} Ήττα vs ${result.opponentName} — Νοσοκομείο${cashLost ? ` · -€${cashLost}` : ''}`,
       'danger'
     )
-    gameStore.addNotification('Ήττα! Νοσοκομείο...', 'hospital')
+    let loseMsg = 'Ήττα! Νοσοκομείο…'
+    if (cashLost > 0) loseMsg += ` Έχασες €${cashLost} (3%).`
+    gameStore.addNotification(loseMsg, 'hospital')
   }
 
   // Record history

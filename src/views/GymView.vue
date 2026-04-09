@@ -268,7 +268,7 @@ function onDiceDismiss() {
       player.trainStat(r.statKey, r.statGain)
       player.logActivity(`💪 ${r.statName}: +${r.statGain.toFixed(3)}`, 'info')
       gameStore.addNotification(`${r.statName}: +${r.statGain.toFixed(3)}`, 'success')
-      missionStore.onGymTrain()
+      missionStore.updateProgress('gym', 1)
     }
     player.clearPendingResult()
     gameStore.saveGame()

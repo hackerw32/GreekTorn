@@ -1,6 +1,13 @@
 <template>
   <div class="arena" :class="{ 'arena-shake': shaking }">
 
+    <div v-if="phase !== 'result'" class="flee-bar">
+      <button type="button" class="btn btn-sm btn-outline flee-btn" @click="flee">
+        🏃 Βάλ'το στα πόδια
+      </button>
+      <span class="flee-hint text-muted">-25% Θράσος &amp; Κέφι · χωρίς απώλεια HP</span>
+    </div>
+
     <!-- ===== INTRO VS SCREEN ===== -->
     <div v-if="phase === 'intro'" class="intro">
       <div class="intro-fighter">
@@ -125,7 +132,7 @@ const props = defineProps({
   opponent: { type: Object, required: true },
   isPvp: { type: Boolean, default: false },
 })
-const emit = defineEmits(['fight-end'])
+const emit = defineEmits(['fight-end', 'fight-flee'])
 
 const player = usePlayerStore()
 const inv = useInventoryStore()
@@ -367,6 +374,14 @@ function finish() {
   emit('fight-end', { ...resData.value, isPvp: props.isPvp, opponentId: props.opponent.id, opponentName: oppName.value, opponentIcon: props.opponent.icon })
 }
 
+function flee() {
+  if (phase.value === 'result' || dead) return
+  dead = true
+  timers.forEach(clearTimeout)
+  timers = []
+  emit('fight-flee', { opponentId: props.opponent.id, isPvp: props.isPvp, opponentName: oppName.value })
+}
+
 /* ---------- lifecycle ---------- */
 onMounted(async () => {
   addLog(`⚔️ ${playerName} vs ${oppName.value}`, 'info')
@@ -380,6 +395,29 @@ onBeforeUnmount(() => { dead = true; timers.forEach(clearTimeout) })
 </script>
 
 <style scoped>
+.flee-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  padding: var(--space-xs) 0;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: var(--space-xs);
+}
+.flee-btn {
+  flex-shrink: 0;
+  border-color: rgba(230, 126, 34, 0.45);
+}
+.flee-btn:hover {
+  border-color: var(--color-warning, #e67e22);
+  background: rgba(230, 126, 34, 0.08);
+}
+.flee-hint {
+  font-size: var(--font-size-xs);
+  line-height: 1.35;
+}
+
 .arena {
   display: flex; flex-direction: column; gap: var(--space-sm);
   position: relative;

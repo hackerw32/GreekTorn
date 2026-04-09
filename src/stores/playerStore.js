@@ -230,11 +230,12 @@ export const usePlayerStore = defineStore('player', {
       this.pendingResult = null
     },
 
-    /** Εναλλαγή «γρήγορης προώθησης» μόνο για την τρέχουσα δραστηριότητα (x1 ↔ x3). */
-    toggleActivityFastForward() {
+    /** Ενεργοποίηση x3 μόνο (δεν γυρνάει ποτέ σε κανονική ροή μέχρι να τελειώσει το task). */
+    enableActivityFastForward() {
       if (!this.activeActivity || this.pendingResult) return
       const cur = Number(this.activeActivity.timeScale) || 1
-      this.activeActivity.timeScale = cur >= 3 ? 1 : 3
+      if (cur >= 3) return
+      this.activeActivity.timeScale = 3
     },
 
     resolveActivity() {

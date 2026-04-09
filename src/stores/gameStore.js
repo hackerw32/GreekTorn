@@ -54,7 +54,9 @@ export const useGameStore = defineStore('game', {
       const stockStore = useStockStore()
       stockStore.initializePrices()
       useDailyRewardStore().checkDaily()
-      useMissionStore().refreshMissions()
+      const missionStore = useMissionStore()
+      missionStore.refreshMissions()
+      missionStore.startNextStoryMission()
       this.saveGame()
     },
 
@@ -205,7 +207,9 @@ export const useGameStore = defineStore('game', {
 
         // Check daily systems
         useDailyRewardStore().checkDaily()
-        useMissionStore().refreshMissions()
+        const missionStore = useMissionStore()
+        missionStore.refreshMissions()
+        missionStore.startNextStoryMission()
         useAchievementStore().checkAchievements()
 
         return true

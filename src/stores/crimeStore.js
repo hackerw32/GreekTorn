@@ -174,9 +174,10 @@ export const useCrimeStore = defineStore('crime', {
       }
 
       // Track missions & achievements
-      useMissionStore().onCrimeComplete(result.success)
+      const missionStore = useMissionStore()
+      missionStore.updateProgress('crime', 1, { success: result.success })
       if (result.success && result.rewards?.cash) {
-        useMissionStore().onEarnCash(result.rewards.cash)
+        missionStore.updateProgress('earn', result.rewards.cash)
       }
       useAchievementStore().checkAchievements()
 
