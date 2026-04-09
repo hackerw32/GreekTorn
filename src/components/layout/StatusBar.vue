@@ -80,13 +80,13 @@ const article = computed(() => player.gender === 'female' ? 'Η' : 'Ο')
 
 // 2. Σωστή γραμματική για πόλεις (σε/στον/στην/στο)
 const LOCATION_GRAMMAR = {
-  'athens': 'στην Αθήνα',
-  'thessaloniki': 'στη Θεσσαλονίκη',
-  'patras': 'στην Πάτρα',
-  'heraklion': 'στο Ηράκλειο',
-  'mykonos': 'στη Μύκονο',
-  'santorini': 'στη Σαντορίνη',
-  'corfu': 'στην Κέρκυρα'
+  'athens': ' στην Αθήνα ',
+  'thessaloniki': ' στη Θεσσαλονίκη ',
+  'patras': ' στην Πάτρα ',
+  'heraklion': ' στο Ηράκλειο ',
+  'mykonos': ' στη Μύκονο ',
+  'santorini': ' στη Σαντορίνη ',
+  'corfu': ' στην Κέρκυρα '
 }
 const locationPrefix = computed(() => {
   return LOCATION_GRAMMAR[travelStore.currentLocation] || 'στην πόλη'
