@@ -171,6 +171,13 @@ export const usePlayerStore = defineStore('player', {
       this.cash = Math.max(0, this.cash - amount)
     },
 
+    /** Για δοκιμές: ορίζει άμεσα τα μετρητά (>= 0). */
+    setCash(amount) {
+      const n = Number(amount)
+      if (!Number.isFinite(n)) return
+      this.cash = Math.max(0, Math.min(Math.floor(n), Number.MAX_SAFE_INTEGER))
+    },
+
     modifyResource(type, amount) {
       const res = this.resources[type]
       if (!res) return

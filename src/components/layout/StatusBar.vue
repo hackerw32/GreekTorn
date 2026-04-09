@@ -14,9 +14,31 @@
           </div>
         </div>
 
-        <div class="player-cash">
-          <span class="cash-icon">€</span>
-          <span class="cash-amount">{{ formatCash(player.cash) }}</span>
+        <div
+          class="player-cash"
+          :class="{ 'is-editing': editingCash }"
+          title="Κλικ για να ορίσεις μετρητά (δοκιμή)"
+          @click="startEditCash"
+        >
+          <template v-if="!editingCash">
+            <span class="cash-icon">€</span>
+            <span class="cash-amount">{{ formatCash(player.cash) }}</span>
+          </template>
+          <template v-else>
+            <span class="cash-icon">€</span>
+            <input
+              ref="cashInputRef"
+              v-model="cashDraft"
+              class="cash-input"
+              type="text"
+              inputmode="numeric"
+              autocomplete="off"
+              @click.stop
+              @keydown.enter.prevent="commitCashEdit"
+              @keydown.esc.prevent="cancelCashEdit"
+              @blur="commitCashEdit"
+            />
+          </template>
         </div>
       </div>
       
@@ -60,7 +82,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, nextTick } from 'vue'
 import { usePlayerStore } from '../../stores/playerStore'
 import { useTravelStore } from '../../stores/travelStore'
 import { usePropertyStore } from '../../stores/propertyStore'
@@ -73,6 +95,35 @@ const propertyStore = usePropertyStore()
 
 function formatCash(amount) {
   return new Intl.NumberFormat('el-GR').format(Math.floor(amount))
+}
+
+const editingCash = ref(false)
+const cashDraft = ref('')
+const cashInputRef = ref(null)
+
+function parseCashDraft(raw) {
+  const digits = String(raw).replace(/\D/g, '')
+  if (!digits) return 0
+  const n = parseInt(digits, 10)
+  return Number.isFinite(n) ? Math.min(n, Number.MAX_SAFE_INTEGER) : 0
+}
+
+function startEditCash() {
+  if (editingCash.value) return
+  editingCash.value = true
+  cashDraft.value = String(Math.floor(player.cash))
+  nextTick(() => cashInputRef.value?.focus?.())
+}
+
+function commitCashEdit() {
+  if (!editingCash.value) return
+  player.setCash(parseCashDraft(cashDraft.value))
+  editingCash.value = false
+}
+
+function cancelCashEdit() {
+  if (!editingCash.value) return
+  editingCash.value = false
 }
 
 // 1. Άρθρο (Ο/Η)
@@ -178,6 +229,31 @@ const dwellingText = computed(() => {
   font-weight: var(--font-weight-bold);
   color: var(--color-success);
   flex-shrink: 0;
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  transition: background 0.12s ease;
+}
+
+.player-cash:not(.is-editing):hover {
+  background: rgba(76, 175, 80, 0.12);
+}
+
+.player-cash.is-editing {
+  cursor: text;
+}
+
+.cash-input {
+  width: 7.5rem;
+  max-width: 32vw;
+  padding: 1px 4px;
+  border: 1px solid var(--color-success);
+  border-radius: 3px;
+  background: var(--bg-app, var(--bg-surface));
+  color: var(--color-success);
+  font: inherit;
+  font-weight: var(--font-weight-bold);
 }
 
 .cash-icon {
