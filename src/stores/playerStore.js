@@ -4,6 +4,7 @@ import { RESOURCE_DEFAULTS, REGEN_RATES, FILOTIMO_MAX, MESON_MAX, ACTIVITY_LOG_M
 export const usePlayerStore = defineStore('player', {
   state: () => ({
     name: '',
+    gender: 'male', // Το φύλο του παίκτη (male/female)
     level: 1,
     xp: 0,
 
@@ -123,8 +124,9 @@ export const usePlayerStore = defineStore('player', {
   },
 
   actions: {
-    initializeCharacter(name, statAllocation) {
+    initializeCharacter(name, gender, statAllocation) {
       this.name = name
+      this.gender = gender
       this.stats.strength = statAllocation.strength
       this.stats.speed = statAllocation.speed
       this.stats.dexterity = statAllocation.dexterity
@@ -294,6 +296,7 @@ export const usePlayerStore = defineStore('player', {
     getSerializable() {
       return {
         name: this.name,
+        gender: this.gender,
         level: this.level,
         xp: this.xp,
         stats: { ...this.stats },
