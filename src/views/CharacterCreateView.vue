@@ -19,6 +19,20 @@
         />
       </div>
 
+      <div class="form-group">
+        <label class="form-label">Φύλο</label>
+        <div class="gender-options">
+          <label class="gender-radio" :class="{ active: gender === 'male' }">
+            <input type="radio" value="male" v-model="gender" hidden />
+            👨 Άντρας
+          </label>
+          <label class="gender-radio" :class="{ active: gender === 'female' }">
+            <input type="radio" value="female" v-model="gender" hidden />
+            👩 Γυναίκα
+          </label>
+        </div>
+      </div>
+
       <div class="stats-section">
         <div class="stats-header">
           <label class="form-label">Κατανομή Στατιστικών</label>
@@ -73,6 +87,7 @@ const playerStore = usePlayerStore()
 const gameStore = useGameStore()
 
 const name = ref('')
+const gender = ref('male') // Default επιλογή
 const error = ref('')
 const allocation = reactive({
   strength: 3,
@@ -99,15 +114,11 @@ const canCreate = computed(() =>
 )
 
 function increase(stat) {
-  if (remaining.value > 0 && allocation[stat] < 10) {
-    allocation[stat]++
-  }
+  if (remaining.value > 0 && allocation[stat] < 10) { allocation[stat]++ }
 }
 
 function decrease(stat) {
-  if (allocation[stat] > 1) {
-    allocation[stat]--
-  }
+  if (allocation[stat] > 1) { allocation[stat]-- }
 }
 
 function create() {
@@ -118,7 +129,8 @@ function create() {
     return
   }
 
-  playerStore.initializeCharacter(name.value.trim(), { ...allocation })
+  // Στέλνουμε ΚΑΙ το φύλο στο Store
+  playerStore.initializeCharacter(name.value.trim(), gender.value, { ...allocation })
   gameStore.setInitialized()
   gameStore.startGameLoop()
   gameStore.addNotification(`Καλώς ήρθες, ${name.value.trim()}! Το χάος ξεκίνησε.`, 'success')
@@ -128,121 +140,45 @@ function create() {
 </script>
 
 <style scoped>
-.create-page {
+/* Κράτησε το ίδιο CSS που είχες, απλά πρόσθεσε αυτό το κομμάτι για τα radio buttons: */
+.gender-options {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  padding: var(--space-lg);
-}
-
-.create-header {
-  text-align: center;
-  margin-bottom: var(--space-xl);
-}
-
-.game-title {
-  font-size: 3rem;
-  font-weight: 900;
-  letter-spacing: 8px;
-  color: var(--color-accent);
-  text-shadow: 0 0 30px rgba(79, 195, 247, 0.3);
-}
-
-.game-subtitle {
-  color: var(--text-secondary);
-  font-size: var(--font-size-sm);
-  margin-top: var(--space-xs);
-  font-style: italic;
-}
-
-.create-card {
-  width: 100%;
-  max-width: 420px;
-}
-
-.form-group {
-  margin-bottom: var(--space-lg);
-}
-
-.form-label {
-  display: block;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--text-secondary);
-  margin-bottom: var(--space-xs);
-}
-
-.stats-section {
-  margin-bottom: var(--space-lg);
-}
-
-.stats-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-sm);
-}
-
-.points-remaining {
-  font-family: var(--font-family-mono);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-bold);
-}
-
-.stat-allocators {
-  display: flex;
-  flex-direction: column;
   gap: var(--space-sm);
 }
-
-.stat-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.gender-radio {
+  flex: 1;
+  text-align: center;
   padding: var(--space-sm);
   background: var(--bg-surface-raised);
+  border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
 }
-
-.stat-info {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-}
-
-.stat-icon {
-  font-size: 18px;
-}
-
-.stat-name {
-  font-weight: var(--font-weight-medium);
-  font-size: var(--font-size-sm);
-}
-
-.stat-controls {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-}
-
-.stat-value {
-  width: 24px;
-  text-align: center;
-  font-weight: var(--font-weight-bold);
-  font-size: var(--font-size-lg);
+.gender-radio.active {
+  background: rgba(79, 195, 247, 0.15);
+  border-color: var(--color-accent);
   color: var(--color-accent);
+  font-weight: bold;
 }
-
-.stat-hint {
-  font-size: var(--font-size-xs);
-  margin-bottom: var(--space-lg);
-  line-height: 1.6;
-}
-
-.version-text {
-  margin-top: var(--space-lg);
-  font-size: var(--font-size-xs);
-}
+/* ... Το υπόλοιπο CSS σου ... */
+.create-page { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: var(--space-lg); }
+.create-header { text-align: center; margin-bottom: var(--space-xl); }
+.game-title { font-size: 3rem; font-weight: 900; letter-spacing: 8px; color: var(--color-accent); text-shadow: 0 0 30px rgba(79, 195, 247, 0.3); }
+.game-subtitle { color: var(--text-secondary); font-size: var(--font-size-sm); margin-top: var(--space-xs); font-style: italic; }
+.create-card { width: 100%; max-width: 420px; }
+.form-group { margin-bottom: var(--space-lg); }
+.form-label { display: block; font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); color: var(--text-secondary); margin-bottom: var(--space-xs); }
+.stats-section { margin-bottom: var(--space-lg); }
+.stats-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm); }
+.points-remaining { font-family: var(--font-family-mono); font-size: var(--font-size-sm); font-weight: var(--font-weight-bold); }
+.stat-allocators { display: flex; flex-direction: column; gap: var(--space-sm); }
+.stat-row { display: flex; align-items: center; justify-content: space-between; padding: var(--space-sm); background: var(--bg-surface-raised); border-radius: var(--border-radius-md); }
+.stat-info { display: flex; align-items: center; gap: var(--space-sm); }
+.stat-icon { font-size: 18px; }
+.stat-name { font-weight: var(--font-weight-medium); font-size: var(--font-size-sm); }
+.stat-controls { display: flex; align-items: center; gap: var(--space-sm); }
+.stat-value { width: 24px; text-align: center; font-weight: var(--font-weight-bold); font-size: var(--font-size-lg); color: var(--color-accent); }
+.stat-hint { font-size: var(--font-size-xs); margin-bottom: var(--space-lg); line-height: 1.6; }
+.version-text { margin-top: var(--space-lg); font-size: var(--font-size-xs); }
 </style>
