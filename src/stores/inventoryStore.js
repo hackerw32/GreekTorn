@@ -10,7 +10,7 @@ export const useInventoryStore = defineStore('inventory', {
       weapon: null,    // itemId or null
       armor: null,     // itemId or null
     },
-    maxSlots: 50,
+    maxSlots: 20,
   }),
 
   getters: {
@@ -25,6 +25,10 @@ export const useInventoryStore = defineStore('inventory', {
     },
 
     itemCount() {
+      return this.items.reduce((sum, i) => sum + i.quantity, 0)
+    },
+
+    totalItems() {
       return this.items.reduce((sum, i) => sum + i.quantity, 0)
     },
 
@@ -43,12 +47,21 @@ export const useInventoryStore = defineStore('inventory', {
 
   actions: {
     addItem(itemId, quantity = 1) {
+      if (quantity <= 0) {
+        return { ok: false, message: 'Μη έγκυρη ποσότητα.' }
+      }
+
+      if (this.totalItems + quantity > 20) {
+        return { ok: false, message: 'Το inventory σου είναι γεμάτο (Max 20)!' }
+      }
+
       const existing = this.items.find(i => i.itemId === itemId)
       if (existing) {
         existing.quantity += quantity
       } else {
         this.items.push({ itemId, quantity })
       }
+      return { ok: true, message: 'OK' }
     },
 
     removeItem(itemId, quantity = 1) {
@@ -156,8 +169,13 @@ export const useInventoryStore = defineStore('inventory', {
         return false
       }
 
+      const addResult = this.addItem(itemId, quantity)
+      if (addResult?.ok === false) {
+        gameStore.addNotification(addResult.message, 'danger')
+        return false
+      }
+
       player.removeCash(total)
-      this.addItem(itemId, quantity)
       gameStore.addNotification(`Αγόρασες ${item.name} x${quantity}`, 'success')
       gameStore.saveGame()
       return true

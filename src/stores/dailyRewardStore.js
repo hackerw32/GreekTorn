@@ -3,6 +3,10 @@ import { dailyRewards } from '../data/dailyRewards'
 import { usePlayerStore } from './playerStore'
 import { useInventoryStore } from './inventoryStore'
 import { useGameStore } from './gameStore'
+<<<<<<< HEAD
+import { usePropertyStore } from './propertyStore'
+=======
+>>>>>>> 6804455d765069a685690bbb983b0915b965cd54
 
 export const useDailyRewardStore = defineStore('dailyReward', {
   state: () => ({
@@ -35,6 +39,11 @@ export const useDailyRewardStore = defineStore('dailyReward', {
 
   actions: {
     checkDaily() {
+<<<<<<< HEAD
+      // Process daily rent/eviction cycle whenever daily systems refresh.
+      usePropertyStore().checkDailyRent()
+=======
+>>>>>>> 6804455d765069a685690bbb983b0915b965cd54
       if (this.canClaim) {
         this.pendingReward = true
       }
