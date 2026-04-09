@@ -207,7 +207,6 @@ export const useGameStore = defineStore('game', {
 
         // Check daily systems
         useDailyRewardStore().checkDaily()
-        const missionStore = useMissionStore()
         missionStore.refreshMissions()
         missionStore.startNextStoryMission()
         useAchievementStore().checkAchievements()
